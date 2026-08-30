@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빛으로 (진주 안전 귀가 내비게이션)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+    <div id="header">
+        <h1>🌟 빛으로 <span class="subtitle">진주 야간 안전 내비게이션</span></h1>
+    </div>
+
+    <!-- 내비게이션 컨트롤 패널 -->
+    <div id="nav-panel">
+
+        <!-- 출발지 -->
+        <div class="input-group">
+            <label>📍 출발지</label>
+            <div class="input-row">
+                <input type="text" id="input-start" placeholder="주소 검색..." />
+                <button id="btn-gps" title="현재 위치로 설정">📡 현위치</button>
+            </div>
+        </div>
+
+        <!-- 도착지 -->
+        <div class="input-group">
+            <label>🏁 도착지</label>
+            <div class="input-row">
+                <input type="text" id="input-end" placeholder="주소 검색..." />
+                <button id="btn-search-end" title="도착지 검색">🔍</button>
+            </div>
+        </div>
+
+        <!-- 검색 결과 드롭다운 -->
+        <div id="search-results" class="hidden"></div>
+
+        <button id="btn-navigate">🚨 안전 귀가 경로 검색</button>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div id="legend">
+        <h3>범례</h3>
+        <div class="legend-item"><span class="light-dot"></span> 가로등 (안전 반경)</div>
+        <div class="legend-item"><span class="cctv-dot"></span> 방범용 CCTV</div>
+        <div class="legend-item"><span class="path-line"></span> 안내 경로</div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
