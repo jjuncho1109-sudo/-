@@ -13,7 +13,7 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="static/style.css?v=2">
+    <link rel="stylesheet" href="static/style.css?v=3">
 </head>
 <body>
     <!-- 상단 헤더 바 -->
@@ -278,16 +278,7 @@
                 <span class="recenter-icon">🎯</span> 내 위치로 맞춤
             </button>
 
-            <!-- 📣 고장 신고 위치 선택 안내 배너 (클릭 시에만 표시) -->
-            <div id="report-mode-banner" class="report-guide-banner hidden">
-                <span>📍 고장 나거나 어두운 지도 위치를 클릭해 주세요</span>
-                <button id="btn-cancel-report-mode" class="banner-cancel-btn">취소</button>
-            </div>
 
-            <!-- 📣 고장 신고 버튼 (지도 위 플로팅) -->
-            <button id="btn-report-float" class="report-float-btn" title="가로등/CCTV 고장 신고 (크라우드소싱)">
-                📣
-            </button>
 
             <!-- 1인칭 네비게이션 HUD 오버레이 -->
             <div id="fpv-overlay" class="fpv-overlay hidden">
@@ -323,42 +314,7 @@
         </main>
     </div>
 
-    <!-- 📣 고장 신고 모달 -->
-    <div id="report-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>📣 가로등/CCTV 고장 신고</h3>
-                <button id="btn-close-report" style="background:none; border:none; color:#888; font-size:20px; cursor:pointer;" title="닫기">✕</button>
-            </div>
-            <p class="modal-desc">지도 상에서 고장 나거나 어두운 지점을 클릭하고 신고해 주세요.</p>
-            <div class="report-location-box" id="report-location-display">
-                📍 지도를 클릭하여 고장 위치 지정
-            </div>
-            <div class="report-type-group">
-                <label class="report-type-chip">
-                    <input type="radio" name="report-type" value="light_out" checked>
-                    <span>💡 가로등 소등</span>
-                </label>
-                <label class="report-type-chip">
-                    <input type="radio" name="report-type" value="light_broken">
-                    <span>💥 조명 파손</span>
-                </label>
-                <label class="report-type-chip">
-                    <input type="radio" name="report-type" value="cctv_broken">
-                    <span>📹 CCTV 고장</span>
-                </label>
-                <label class="report-type-chip">
-                    <input type="radio" name="report-type" value="danger">
-                    <span>⚠️ 위험 구간</span>
-                </label>
-            </div>
-            <textarea id="report-desc-input" class="report-textarea" placeholder="상세 내용을 입력해 주세요 (예: 골목 초입 보안등 꺼짐, 조명 파손 등)"></textarea>
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
-                <button id="btn-cancel-report-dialog" type="button" class="btn-cancel" style="padding:10px 18px; border-radius:10px; background:rgba(255,255,255,0.1); color:#ccc; border:1px solid rgba(255,255,255,0.2); cursor:pointer; font-weight:600;">취소</button>
-                <button id="btn-submit-report" type="button" class="btn-primary" style="padding:10px 22px; border-radius:10px; font-weight:700;">신고 접수</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- 🛡️ 보호자 실시간 안심 동행 모달 -->
     <div id="guardian-modal" class="modal-overlay hidden">
@@ -418,7 +374,7 @@
     </div>
 
     <!-- 스크립트 연결 -->
-    <script src="static/script.js?v=2"></script>
+    <script src="static/script.js?v=3"></script>
     <!-- Service Worker 등록 (오프라인 지원) -->
     <script>
         if ('serviceWorker' in navigator) {

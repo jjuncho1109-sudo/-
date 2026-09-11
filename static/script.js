@@ -541,23 +541,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="spot-status-badge ${spot.status}">
                 ${isOut ? '❌ 현재 소등/위험 상태 (우회 대상)' : '✨ 정상 가동 중 (안심 귀가 구역)'}
             </div>
-            <div style="display:flex; gap:6px; margin-top:8px;">
-                <button class="btn-popup-toggle ${isOut ? 'turn-on' : ''}" style="flex:1;">
+            <div style="margin-top:8px;">
+                <button class="btn-popup-toggle ${isOut ? 'turn-on' : ''}" style="width:100%;">
                     ${isOut ? '✨ 점등/복구' : '💥 소등(시험)'}
-                </button>
-                <button class="btn-popup-report" style="flex:1; background:rgba(255,170,0,0.2); border:1px solid #FFAA00; color:#FFAA00; border-radius:8px; padding:6px; font-size:12px; font-weight:700; cursor:pointer;" title="이 위치의 상세 고장 내역 신고">
-                    📝 고장 신고
                 </button>
             </div>
         `;
 
         popupEl.querySelector('.btn-popup-toggle').addEventListener('click', () => {
             toggleSpotStatus(spot.id);
-        });
-
-        popupEl.querySelector('.btn-popup-report')?.addEventListener('click', () => {
-            map.closePopup();
-            openReportModal({ lat: spot.coords[0], lng: spot.coords[1] }, spot.name);
         });
 
         layer.bindPopup(popupEl);
@@ -2178,151 +2170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ═══════════════════════════════════════════════════════════════════
-    // ⑧ 크라우드소싱 고장 신고 (선택 시 작성 & 깔끔한 모달 제어)
-    // ═══════════════════════════════════════════════════════════════════
-    let reportPendingLatLng = null;
-    let reportMarkerTemp = null;
-    let isReportModeActive = false;
 
-    function closeReportModal() {
-        const modal = document.getElementById('report-modal');
-        const banner = document.getElementById('report-mode-banner');
-        if (modal) modal.classList.add('hidden');
-        if (banner) banner.classList.add('hidden');
-        isReportModeActive = false;
-        if (reportMarkerTemp) {
-            map.removeLayer(reportMarkerTemp);
-            reportMarkerTemp = null;
-        }
-    }
-
-    function openReportModal(latlng, spotName) {
-        reportPendingLatLng = latlng;
-        isReportModeActive = false;
-
-        const banner = document.getElementById('report-mode-banner');
-        if (banner) banner.classList.add('hidden');
-
-        // 임시 마커 지도에 표시
-        if (reportMarkerTemp) map.removeLayer(reportMarkerTemp);
-        reportMarkerTemp = L.marker([latlng.lat, latlng.lng], {
-            icon: L.divIcon({
-                className: '',
-                html: '<div style="font-size:26px;filter:drop-shadow(0 0 8px #FFAA00);transform:translate(-50%,-100%);">📣</div>',
-                iconAnchor: [0, 0]
-            })
-        }).addTo(map);
-
-        const locDisplay = document.getElementById('report-location-display');
-        if (locDisplay) {
-            locDisplay.textContent = spotName
-                ? `📍 ${spotName} (${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)})`
-                : `📍 지정 위치: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
-        }
-
-        const modal = document.getElementById('report-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                const textarea = document.getElementById('report-desc-input');
-                if (textarea) textarea.focus();
-            }, 100);
-        }
-    }
-
-    // 📣 플로팅 신고 버튼 클릭 -> 지도 선택 모드 진입 (안내 배너 노출)
-    document.getElementById('btn-report-float')?.addEventListener('click', () => {
-        isReportModeActive = true;
-        reportPendingLatLng = null;
-        const banner = document.getElementById('report-mode-banner');
-        if (banner) banner.classList.remove('hidden');
-        // 기존 열려있는 모달이 있다면 닫기
-        document.getElementById('report-modal')?.classList.add('hidden');
-    });
-
-    // 배너 취소 버튼
-    document.getElementById('btn-cancel-report-mode')?.addEventListener('click', closeReportModal);
-
-    // 모달 닫기(✕) 및 취소 버튼
-    document.getElementById('btn-close-report')?.addEventListener('click', closeReportModal);
-    document.getElementById('btn-cancel-report-dialog')?.addEventListener('click', closeReportModal);
-
-    // 모달 바깥 어두운 배경 클릭 시 닫기
-    document.getElementById('report-modal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'report-modal') {
-            closeReportModal();
-        }
-    });
-
-    // ESC 키로 모달 닫기
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeReportModal();
-        }
-    });
-
-    // 지도 클릭 시 -> 즉시 위치 캡처 후 신고 모달 팝업 오픈
-    map.on('click', (e) => {
-        if (!isReportModeActive) return;
-        openReportModal(e.latlng);
-    });
-
-    // 신고 접수 실행
-    document.getElementById('btn-submit-report')?.addEventListener('click', () => {
-        if (!reportPendingLatLng) {
-            alert('신고할 위치가 지정되지 않았습니다.');
-            return;
-        }
-
-        const reportTypeEl = document.querySelector('input[name="report-type"]:checked');
-        const reportType = reportTypeEl ? reportTypeEl.value : 'light_out';
-        const descInput = document.getElementById('report-desc-input');
-        const desc = descInput ? descInput.value.trim() : '';
-
-        // 로컬 데이터에 즉시 반영 (해당 위치 근방 스팟을 out 처리)
-        const nearbySpot = allSafeSpots.find(s =>
-            getDistance(reportPendingLatLng.lat, reportPendingLatLng.lng, s.coords[0], s.coords[1]) < 30 &&
-            (reportType.includes('light') ? s.type === 'light' : s.type === 'cctv')
-        );
-
-        if (nearbySpot) {
-            nearbySpot.status = 'out';
-            renderSafetySpots();
-            updateSafetyScoreUI();
-        } else {
-            // 근방에 등록된 스팟이 없으면 가상 신고 스팟 추가
-            const fakeId = 'report_' + Date.now();
-            allSafeSpots.push({
-                id: fakeId,
-                type: reportType.includes('cctv') ? 'cctv' : 'light',
-                name: '시민 신고 — ' + (reportType === 'light_out' ? '가로등 소등' : reportType === 'light_broken' ? '가로등 파손' : reportType === 'cctv_broken' ? 'CCTV 고장' : '위험구간'),
-                coords: [reportPendingLatLng.lat, reportPendingLatLng.lng],
-                status: 'out',
-                district: '시민 신고',
-                desc: desc || '시민 직접 신고 위치'
-            });
-            renderSafetySpots();
-            updateSafetyScoreUI();
-        }
-
-        // localStorage에 신고 기록 저장 (앱 재시작 후에도 유지)
-        const reports = JSON.parse(localStorage.getItem('userReports') || '[]');
-        reports.unshift({
-            lat: reportPendingLatLng.lat,
-            lng: reportPendingLatLng.lng,
-            type: reportType,
-            desc,
-            time: new Date().toLocaleString('ko-KR')
-        });
-        localStorage.setItem('userReports', JSON.stringify(reports.slice(0, 50)));
-
-        // 폼 초기화 및 닫기
-        if (descInput) descInput.value = '';
-        closeReportModal();
-
-        showDetourAlert('📣 신고 완료!', '고장 정보가 실시간으로 반영되었습니다. 다른 귀가자의 경로에도 즉시 적용됩니다.');
-    });
 
     // 앱 시작 시 이전 신고 기록 복원
     (function loadPreviousReports() {
