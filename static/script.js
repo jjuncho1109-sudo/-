@@ -364,6 +364,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return points;
     }
 
+    // ─── 🔤 인코딩 깨짐 감지 (EUC-KR 오류 문자 포함 여부) ────────────────
+    function isGarbledName(name) {
+        if (!name || typeof name !== 'string') return true;
+        // 깨진 문자(대체 문자 등) 비율이 높으면 깨진 것으로 판단
+        const garbledPattern = /[\uFFFD\u00C2-\u00FF]{2,}|[\x80-\xBF]{2,}/;
+        if (garbledPattern.test(name)) return true;
+        // 한글·영어·숫자·공백·특수문자 아닌 문자 비율이 40% 초과 시 깨진 것으로 판단
+        const validChars = (name.match(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF\w\s\.,!\?\-\(\)]/g) || []).length;
+        return validChars / name.length < 0.6;
+    }
+
+    function cleanSpotName(spot) {
+        if (isGarbledName(spot.name)) {
+            if (spot.type === 'night_store') return '안심 업소';
+            if (spot.type === 'cctv') return '방범 CCTV';
+            if (spot.type === 'light') return '안심 가로등';
+            return '안심 시설';
+        }
+        return spot.name;
+    }
+
+    // ─── 진주시 유효 경계 (이 범위 밖 데이터는 오류 데이터로 무시) ───────
+    const JINJU_BOUNDS = {
+        minLat: 34.90, maxLat: 35.35,
+        minLng: 127.85, maxLng: 128.30
+    };
+    function isValidJinjuCoord(coords) {
+        if (!Array.isArray(coords) || coords.length < 2) return false;
+        const [lat, lng] = coords;
+        return lat >= JINJU_BOUNDS.minLat && lat <= JINJU_BOUNDS.maxLat &&
+               lng >= JINJU_BOUNDS.minLng && lng <= JINJU_BOUNDS.maxLng;
+    }
+
     // ─── 실제 진주시 안심 데이터 로드 및 렌더링 ────────────────────────
     async function loadSafetySpots() {
         try {
@@ -376,7 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 data = await fbRes.json();
             }
             if (data && data.spots) {
-                allSafeSpots = data.spots;
+                // 진주시 경계 밖 오류 데이터 필터링
+                allSafeSpots = data.spots.filter(s => isValidJinjuCoord(s.coords));
                 renderSafetySpots();
                 const totalBadge = document.getElementById('total-spots-badge');
                 if (totalBadge) totalBadge.textContent = `${allSafeSpots.length.toLocaleString()}개 연동`;
@@ -385,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let fbRes = await fetch('safe_spots.json');
                 let data = await fbRes.json();
-                allSafeSpots = data.spots || [];
+                allSafeSpots = (data.spots || []).filter(s => isValidJinjuCoord(s.coords));
                 renderSafetySpots();
                 const totalBadge = document.getElementById('total-spots-badge');
                 if (totalBadge) totalBadge.textContent = `${allSafeSpots.length.toLocaleString()}개 연동`;
@@ -530,11 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 subLayers.push(storeCircle);
 
                 if (zoom >= 14) {
+                    const displayName = cleanSpotName(spot);
                     const storeIcon = L.divIcon({
                         className: 'store-div-icon',
-                        html: `<div class="store-marker-pin ${isOut ? 'out' : ''}">${spot.icon || '🏪'} ${spot.store_brand || '24시'}</div>`,
-                        iconSize: [64, 22],
-                        iconAnchor: [32, 11]
+                        html: `<div class="store-marker-pin ${isOut ? 'out' : ''}">${spot.icon || '🏪'} ${displayName}</div>`,
+                        iconSize: [80, 22],
+                        iconAnchor: [40, 11]
                     });
                     const marker = L.marker(spot.coords, { icon: storeIcon }).addTo(spotLayerGroup);
                     subLayers.push(marker);
@@ -592,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         popupEl.innerHTML = `
             <div class="spot-popup-title">
                 <span>${iconEmoji}</span>
-                <span>${spot.name || '진주 안심 인프라'}</span>
+                <span>${cleanSpotName(spot)}</span>
             </div>
             ${metaHtml}
             <div class="spot-status-badge ${spot.status}">
