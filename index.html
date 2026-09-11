@@ -91,8 +91,28 @@
 
     <!-- 메인 컨테이너 -->
     <div id="app-container">
-        <!-- 좌측 컨트롤 패널 -->
+        <!-- 좌측 컨트롤 패널 (모바일에서는 카카오맵 스타일 하단 바텀 시트) -->
         <aside id="nav-panel">
+            <!-- 📱 모바일 카카오맵 스타일 바텀시트 핸들러 & 요약 바 -->
+            <div id="mobile-sheet-header" class="mobile-sheet-header">
+                <div class="sheet-drag-pill" title="드래그하거나 눌러서 상세 경로 펼치기"></div>
+                <div class="sheet-peek-summary">
+                    <div class="sheet-peek-info">
+                        <div class="peek-main">
+                            <span class="peek-time" id="sheet-peek-time">도보 13분</span>
+                            <span class="peek-dist" id="sheet-peek-dist">1.0 km</span>
+                            <span class="peek-safety-tag" id="sheet-peek-safety">🛡️ 안심 98점</span>
+                        </div>
+                        <div class="peek-sub" id="sheet-peek-sub">
+                            ✨ 진주시청 ➔ 동명고 안심 가로등길
+                        </div>
+                    </div>
+                    <button id="btn-sheet-toggle" class="sheet-toggle-btn" title="상세 경로 및 옵션 펼치기">
+                        <span id="sheet-toggle-icon">▲</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="panel-section">
                 <div class="section-title">📍 경로 & 실시간 위치</div>
                 
@@ -283,6 +303,20 @@
             <button id="btn-recenter-walker" class="recenter-btn hidden" title="이동 중인 캐릭터 위치로 카메라 맞춤">
                 <span class="recenter-icon">🎯</span> 내 위치로 맞춤
             </button>
+
+            <!-- 📱 모바일 카카오맵/네이버지도 스타일 우측 플로팅 액션 버튼 (FAB) -->
+            <div id="mobile-map-fabs" class="mobile-map-fabs">
+                <button id="btn-mobile-gps" class="fab-circle gps" title="현재 내 GPS 위치로 지도 맞춤">
+                    <span class="fab-icon">📡</span>
+                    <span class="fab-label">내위치</span>
+                </button>
+                <button id="btn-mobile-fpv" class="fab-circle fpv" title="1인칭 주행 시점 토글">
+                    <span class="fab-icon">🚶</span>
+                </button>
+                <button id="btn-mobile-heatmap" class="fab-circle heatmap" title="야간 조도 히트맵 토글">
+                    <span class="fab-icon">🌟</span>
+                </button>
+            </div>
 
 
 

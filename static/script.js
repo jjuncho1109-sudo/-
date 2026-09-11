@@ -1269,6 +1269,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const elStatDist = document.getElementById('stat-dist');
         if (elStatDist) elStatDist.textContent = `${distKm} km`;
+
+        // 📱 모바일 카카오맵 스타일 바텀시트 요약 바 동기화
+        const elSheetTime = document.getElementById('sheet-peek-time');
+        if (elSheetTime) elSheetTime.textContent = `도보 ${formatTime(walkMin)}`;
+
+        const elSheetDist = document.getElementById('sheet-peek-dist');
+        if (elSheetDist) elSheetDist.textContent = `${distKm} km`;
+
+        const elSheetSub = document.getElementById('sheet-peek-sub');
+        if (elSheetSub) {
+            const startVal = (document.getElementById('input-start')?.value || '출발지').split(' ')[0];
+            const endVal = (document.getElementById('input-end')?.value || '도착지').split(' ')[0];
+            elSheetSub.textContent = `✨ ${startVal} ➔ ${endVal} 안심 가로등길`;
+        }
     }
 
     // ─── 🚶 1인칭 네비게이션 시점 토글 ────────────────────────────────
@@ -2458,6 +2472,81 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 prompt('모바일 접속 주소:', mobileTargetUrl);
             }
+        });
+    }
+
+    // ─── 📱 모바일 카카오맵/네이버지도 스타일 바텀시트 & 플로팅 버튼 인터랙션 ──
+    const mobileSheetHeader = document.getElementById('mobile-sheet-header');
+    const navPanel = document.getElementById('nav-panel');
+    const btnSheetToggle = document.getElementById('btn-sheet-toggle');
+    const btnMobileGps = document.getElementById('btn-mobile-gps');
+    const btnMobileFpv = document.getElementById('btn-mobile-fpv');
+    const btnMobileHeatmap = document.getElementById('btn-mobile-heatmap');
+
+    if (mobileSheetHeader && navPanel) {
+        // 탭/클릭으로 바텀 시트 열기/닫기
+        function toggleBottomSheet(forceState) {
+            const isCurrentlyExpanded = navPanel.classList.contains('sheet-expanded');
+            const shouldExpand = (typeof forceState === 'boolean') ? forceState : !isCurrentlyExpanded;
+            if (shouldExpand) {
+                navPanel.classList.add('sheet-expanded');
+            } else {
+                navPanel.classList.remove('sheet-expanded');
+            }
+        }
+
+        mobileSheetHeader.addEventListener('click', (e) => {
+            toggleBottomSheet();
+        });
+
+        btnSheetToggle?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleBottomSheet();
+        });
+
+        // 모바일 터치 스와이프 제스처 지원 (위로 올리면 열리고, 아래로 내리면 닫힘)
+        let touchStartY = 0;
+        mobileSheetHeader.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        mobileSheetHeader.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffY = touchStartY - touchEndY;
+            if (diffY > 40) {
+                toggleBottomSheet(true);
+            } else if (diffY < -40) {
+                toggleBottomSheet(false);
+            }
+        }, { passive: true });
+
+        // 지도 영역을 터치하거나 클릭하면 바텀시트를 자동으로 접어 지도를 넓게 볼 수 있도록 함
+        map.on('click', () => {
+            if (window.innerWidth <= 768 && navPanel.classList.contains('sheet-expanded')) {
+                toggleBottomSheet(false);
+            }
+        });
+    }
+
+    // 📱 모바일 우측 플로팅 FAB 버튼 연동
+    if (btnMobileGps) {
+        btnMobileGps.addEventListener('click', () => {
+            const pcGpsBtn = document.getElementById('btn-gps');
+            if (pcGpsBtn) pcGpsBtn.click();
+        });
+    }
+
+    if (btnMobileFpv) {
+        btnMobileFpv.addEventListener('click', () => {
+            const pcFpvBtn = document.getElementById('btn-toggle-fpv');
+            if (pcFpvBtn) pcFpvBtn.click();
+        });
+    }
+
+    if (btnMobileHeatmap) {
+        btnMobileHeatmap.addEventListener('click', () => {
+            const pcHeatmapBtn = document.getElementById('btn-heatmap-toggle');
+            if (pcHeatmapBtn) pcHeatmapBtn.click();
         });
     }
 
