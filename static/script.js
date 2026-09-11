@@ -2406,6 +2406,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ─── 📱 모바일 QR 접속 모달 로직 ────────────────────────────────
+    const qrModal = document.getElementById('modal-qr');
+    const btnHeaderQr = document.getElementById('btn-header-qr');
+    const btnCloseQr = document.getElementById('btn-close-qr-modal');
+    const modalQrCanvas = document.getElementById('modal-qr-canvas');
+    const modalQrUrlText = document.getElementById('modal-qr-url-text');
+    const btnCopyModalQr = document.getElementById('btn-copy-modal-qr-url');
+
+    if (btnHeaderQr && qrModal) {
+        const host = window.location.hostname;
+        const port = window.location.port || '5000';
+        const pcLanIp = (host && host !== 'localhost' && host !== '127.0.0.1') ? host : '210.222.176.175';
+        const mobileTargetUrl = `http://${pcLanIp}:${port}/`;
+
+        function openQrModal() {
+            qrModal.classList.remove('hidden');
+            if (modalQrUrlText) modalQrUrlText.textContent = mobileTargetUrl;
+            
+            if (modalQrCanvas && typeof QRCode !== 'undefined') {
+                modalQrCanvas.innerHTML = '';
+                new QRCode(modalQrCanvas, {
+                    text: mobileTargetUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#080c14',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        btnHeaderQr.addEventListener('click', (e) => {
+            e.preventDefault();
+            openQrModal();
+        });
+
+        btnCloseQr?.addEventListener('click', () => {
+            qrModal.classList.add('hidden');
+        });
+
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) qrModal.classList.add('hidden');
+        });
+
+        btnCopyModalQr?.addEventListener('click', () => {
+            const orig = btnCopyModalQr.textContent;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(mobileTargetUrl).then(() => {
+                    btnCopyModalQr.textContent = '✅ 주소 복사 완료!';
+                    setTimeout(() => { btnCopyModalQr.textContent = orig; }, 2000);
+                });
+            } else {
+                prompt('모바일 접속 주소:', mobileTargetUrl);
+            }
+        });
+    }
+
     loadSafetySpots().then(() => {
         calculateSafeRoute(false);
         setTimeout(updateSafetyScoreUI, 2000);

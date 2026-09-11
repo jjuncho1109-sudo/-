@@ -13,6 +13,8 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- QRCode JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="static/style.css?v=3">
 </head>
 <body>
@@ -57,10 +59,10 @@
             <button id="btn-heatmap-toggle" class="header-btn heatmap-toggle-btn" title="밤길 가로등·상점 조도 히트맵(빛의 길) 시각화">
                 <span class="icon">🌟</span> <span class="txt">조도 히트맵</span>
             </button>
-            <!-- 📱 모바일 QR 접속 -->
-            <a href="qr.html" target="_blank" class="header-btn qr-access-btn" title="모바일로 QR 접속" style="text-decoration:none; display:inline-flex; align-items:center;">
+            <!-- 📱 모바일 QR 접속 버튼 (모달 팝업 트리거) -->
+            <button id="btn-header-qr" class="header-btn qr-access-btn" title="스마트폰 카메라로 스캔하여 모바일 접속">
                 <span class="icon">📱</span> <span class="txt">QR 접속</span>
-            </a>
+            </button>
             <!-- 🛡️ 보호자 실시간 안심 동행 링크 공유 버튼 -->
             <button id="btn-guardian-share" class="header-btn guardian-share-btn" title="보호자/가족에게 실시간 귀가 현황 링크 공유">
                 <span class="icon">🛡️</span> <span class="txt">안심 동행</span>
@@ -373,6 +375,45 @@
                 <button id="btn-kakao-guardian-share" class="btn-kakao-share" style="flex:1;">
                     <span style="font-size:16px;">💬</span> 카카오톡으로 안심 링크 전송
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 스마트폰 모바일 QR 즉시 접속 모달 -->
+    <div id="modal-qr" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width:440px; text-align:center; padding:24px; border:1px solid rgba(0,255,144,0.3); box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; margin:0; color:#e8eaf0;">
+                    <span>📱</span> 스마트폰 모바일 접속 QR
+                </h3>
+                <button id="btn-close-qr-modal" class="modal-close-btn" style="background:none; border:none; color:rgba(232,234,240,0.6); font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            
+            <p style="font-size:13px; color:rgba(232,234,240,0.7); margin-bottom:16px;">
+                스마트폰 카메라로 아래 <strong>QR코드</strong>를 비추면 즉시 앱이 열립니다.
+            </p>
+
+            <!-- QR 캔버스 -->
+            <div style="margin-bottom:16px;">
+                <div id="modal-qr-canvas" style="display:inline-block; background:#ffffff; padding:12px; border-radius:16px; box-shadow:0 0 30px rgba(0,255,144,0.35);"></div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px 14px; margin-bottom:16px; text-align:left;">
+                <div style="font-size:11px; font-weight:700; color:rgba(232,234,240,0.4); text-transform:uppercase; margin-bottom:4px;">모바일 접속 주소</div>
+                <div id="modal-qr-url-text" style="font-size:13px; font-weight:800; color:#00FF90; word-break:break-all;"></div>
+            </div>
+
+            <div style="display:flex; gap:8px;">
+                <button id="btn-copy-modal-qr-url" class="btn-primary" style="flex:1; padding:11px; font-size:13px; font-weight:800; margin:0;">
+                    📋 주소 복사
+                </button>
+                <a href="qr.html" target="_blank" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none; padding:11px 16px; font-size:13px; font-weight:700; border-radius:12px; background:rgba(255,255,255,0.08); color:#e8eaf0; border:1px solid rgba(255,255,255,0.12); transition:all 0.2s;">
+                    ↗️ 전체화면
+                </a>
+            </div>
+
+            <div style="margin-top:14px; padding:8px 10px; background:rgba(0,229,255,0.06); border-radius:8px; font-size:11px; color:rgba(232,234,240,0.6); text-align:center;">
+                💡 스마트폰과 PC가 <strong>같은 Wi-Fi</strong>(공유기)에 연결되어 있으면 즉시 접속됩니다.
             </div>
         </div>
     </div>
