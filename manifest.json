@@ -1,0 +1,10 @@
+{
+  "name": "빛으로 — 진주 안심 귀가",
+  "short_name": "빛으로",
+  "description": "진주시 전역 실시간 안심 귀가 내비게이션",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#00E5FF",
+  "icons": []
+}

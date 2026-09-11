@@ -10,5 +10,9 @@ venv/
 *.csv
 *.xlsx
 
+# Executables / Binaries
+*.exe
+cloudflared.exe
+
 # macOS
 .DS_Store
