@@ -11,44 +11,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ─── 🏛️ 진주시 주요 랜드마크 & POI 데이터베이스 (정밀 위경도 매핑) ───
     const JINJU_LANDMARKS = [
-        { name: '진주 롯데시네마', aliases: ['롯데시네마', '진주롯데시네마', '롯데시네마진주', '롯데시네마혁신', '롯데몰시네마'], addr: '충무공동 롯데몰 4F', icon: '🎬', lat: 35.1725, lng: 128.1448 },
-        { name: '롯데시네마 프리미엄진주', aliases: ['프리미엄진주', '대안동롯데시네마', '시내롯데시네마'], addr: '대안동 13-11', icon: '🎬', lat: 35.1950, lng: 128.0837 },
-        { name: '롯데시네마 엠비씨네', aliases: ['엠비씨네', 'MBC시네마', '가좌동롯데시네마'], addr: '가좌동 MBC경남', icon: '🎬', lat: 35.1610, lng: 128.1070 },
-        { name: '진주동명고등학교', aliases: ['동명고', '동명고등학교', '진주동명고', '동명중', '동명중학교'], addr: '초전동 461-1 (대신로 454-25)', icon: '🏫', lat: 35.2025, lng: 128.1183 },
-        { name: '동명중학교', aliases: ['동명중', '진주동명중학교'], addr: '초전동 461-1 (대신로 454-25)', icon: '🏫', lat: 35.2021, lng: 128.1188 },
-        { name: '진주고등학교', aliases: ['진주고'], addr: '인사동 1-1', icon: '🏫', lat: 35.1983, lng: 128.0776 },
+        // 🏫 초전동 학교 및 주요 시설
+        { name: '진주동명고등학교', aliases: ['동명고', '동명고등학교', '진주동명고', '동명고정문'], addr: '초전동 461-1 (대신로 454-25 정문 진입로)', icon: '🏫', lat: 35.2008, lng: 128.1198 },
+        { name: '동명중학교', aliases: ['동명중', '진주동명중학교', '동명중정문'], addr: '초전동 461-1 (대신로 454-25 정문)', icon: '🏫', lat: 35.2012, lng: 128.1198 },
+        { name: '명신고등학교', aliases: ['명신고', '명신고등학교'], addr: '초전동 124 (대신로 614)', icon: '🏫', lat: 35.2045, lng: 128.1255 },
+        { name: '초전공원', aliases: ['초전생태공원', '초전체육공원'], addr: '초전동 1100', icon: '🌳', lat: 35.2072, lng: 128.1215 },
+        { name: '초전동 주민센터', aliases: ['초전동행정복지센터', '초전동'], addr: '초전동 677-1', icon: '🏢', lat: 35.2052, lng: 128.1224 },
+
+        // 🏢 초전동 대표 아파트 단지 (정밀 좌표)
+        { name: '초전 해모로 4단지', aliases: ['해모로4단지', '해모로 4단지', '초전해모로4단지', '초전해모로루비채4단지', '해모로루비채4단지', '해모로4차', '해모로4', '초북로 55'], addr: '초전동 1642 (초북로 55)', icon: '🏢', lat: 35.2085, lng: 128.1275 },
+        { name: '초전 해모로 2단지', aliases: ['해모로2단지', '해모로 2단지', '초전해모로2단지', '초전해모로루비채2단지', '해모로루비채2단지', '해모로2차', '해모로2', '초북로 56'], addr: '초전동 1643 (초북로 56)', icon: '🏢', lat: 35.2075, lng: 128.1260 },
+        { name: '초전 푸르지오', aliases: ['초전푸르지오', '초전푸르지오1단지', '초전푸르지오2단지', '푸르지오'], addr: '초전동 초전북로 61', icon: '🏢', lat: 35.2095, lng: 128.1245 },
+        { name: '초전 엠코타운 더 프라하', aliases: ['엠코타운', '엠코타운더프라하', '초전엠코', '엠코'], addr: '초전동 초전북로 39', icon: '🏢', lat: 35.2065, lng: 128.1235 },
+        { name: '초전 힐스테이트', aliases: ['힐스테이트초전', '초전힐스테이트', '힐스테이트'], addr: '초전동 초전북로 21', icon: '🏢', lat: 35.2045, lng: 128.1230 },
+        { name: '초전 이지더원', aliases: ['이지더원', '초전이지더원'], addr: '초전동 1658', icon: '🏢', lat: 35.2100, lng: 128.1290 },
+
+        // 🏫 진주시 주요 고등학교 및 대학교
+        { name: '진주고등학교', aliases: ['진주고', '진주고교'], addr: '인사동 1-1', icon: '🏫', lat: 35.1983, lng: 128.0776 },
         { name: '진주여자고등학교', aliases: ['진주여고'], addr: '상봉동 984', icon: '🏫', lat: 35.2023, lng: 128.0834 },
         { name: '대아고등학교', aliases: ['대아고'], addr: '이현동 17-1', icon: '🏫', lat: 35.2014, lng: 128.0642 },
-        { name: '명신고등학교', aliases: ['명신고'], addr: '초전동 124 (대신로 614)', icon: '🏫', lat: 35.2045, lng: 128.1255 },
         { name: '경남예술고등학교', aliases: ['경남예고'], addr: '이현동', icon: '🏫', lat: 35.1905, lng: 128.0650 },
         { name: '경상국립대학교', aliases: ['경상대', '경상국립대', '가좌캠퍼스'], addr: '가좌동 501번지', icon: '🏫', lat: 35.1522, lng: 128.1008 },
         { name: '경상국립대 칠암캠퍼스', aliases: ['경남과기대', '과기대', '칠암캠퍼스'], addr: '칠암동 33', icon: '🏫', lat: 35.1804, lng: 128.0942 },
+
+        // 🏛️ 진주시 주요 관공서 및 교통
         { name: '진주시청', aliases: ['시청', '진주시청본관'], addr: '상대동 520-2', icon: '🏛️', lat: 35.1802, lng: 128.1076 },
         { name: '진주고속버스터미널', aliases: ['고속터미널', '고속버스터미널'], addr: '칠암동 489-60', icon: '🚌', lat: 35.1788, lng: 128.0924 },
         { name: '진주시외버스터미널', aliases: ['시외터미널', '시외버스터미널'], addr: '장대동 96-1', icon: '🚌', lat: 35.1906, lng: 128.0888 },
         { name: '진주역', aliases: ['진주역KTX', '신진주역', '개좌동역'], addr: '가좌동 1238', icon: '🚉', lat: 35.1540, lng: 128.1180 },
         { name: '진주성', aliases: ['촉석루', '진주성공원'], addr: '남성동 170', icon: '🏯', lat: 35.1935, lng: 128.0811 },
         { name: '국립진주박물관', aliases: ['진주박물관'], addr: '남성동 169-17 (진주성 내)', icon: '🏛️', lat: 35.1940, lng: 128.0808 },
+
+        // 🏥 의료 및 대형 상권
         { name: '경상국립대학교병원', aliases: ['경상대병원', '진주경상대병원'], addr: '칠암동 90', icon: '🏥', lat: 35.1854, lng: 128.0875 },
         { name: '진주 고려병원', aliases: ['고려병원'], addr: '칠암동 485-2', icon: '🏥', lat: 35.1812, lng: 128.0931 },
         { name: '진주 제일병원', aliases: ['제일병원'], addr: '강남동 181-1', icon: '🏥', lat: 35.1866, lng: 128.0855 },
+        { name: '진주 롯데시네마', aliases: ['롯데시네마', '진주롯데시네마', '롯데시네마진주', '롯데시네마혁신', '롯데몰시네마'], addr: '충무공동 롯데몰 4F', icon: '🎬', lat: 35.1725, lng: 128.1448 },
+        { name: '롯데시네마 프리미엄진주', aliases: ['프리미엄진주', '대안동롯데시네마', '시내롯데시네마'], addr: '대안동 13-11', icon: '🎬', lat: 35.1950, lng: 128.0837 },
+        { name: '롯데시네마 엠비씨네', aliases: ['엠비씨네', 'MBC시네마', '가좌동롯데시네마'], addr: '가좌동 MBC경남', icon: '🎬', lat: 35.1610, lng: 128.1070 },
         { name: '진주 이마트', aliases: ['이마트', '이마트진주점'], addr: '인사동 8-1', icon: '🛒', lat: 35.1945, lng: 128.0754 },
         { name: '진주 홈플러스', aliases: ['홈플러스', '홈플러스진주점'], addr: '상대동 300-11', icon: '🛒', lat: 35.1782, lng: 128.1143 },
         { name: '진주 롯데마트', aliases: ['롯데마트', '롯데몰', '롯데몰진주점'], addr: '충무공동 35', icon: '🛒', lat: 35.1723, lng: 128.1445 },
         { name: '하대 탑마트', aliases: ['탑마트', '하대동탑마트'], addr: '하대동 315-1', icon: '🛒', lat: 35.1932, lng: 128.1156 },
         { name: 'CGV 진주', aliases: ['진주CGV', 'CGV'], addr: '대안동 11-1', icon: '🎬', lat: 35.1938, lng: 128.0845 },
-        { name: '초전공원', aliases: ['초전생태공원'], addr: '초전동 1100', icon: '🌳', lat: 35.2072, lng: 128.1215 },
+        { name: '진주 중앙시장', aliases: ['중앙시장'], addr: '대안동 8-54', icon: '🛍️', lat: 35.1934, lng: 128.0858 },
+
+        // 🏙️ 충무공동 혁신도시 및 평거/신안/하대동 주요 거점
+        { name: '진주 혁신도시 LH본사', aliases: ['혁신도시', 'LH본사', '충무공동'], addr: '충무공동 LH본사', icon: '🏙️', lat: 35.1710, lng: 128.1440 },
         { name: '진주종합경기장', aliases: ['종합경기장', '혁신도시경기장'], addr: '충무공동 8', icon: '🏟️', lat: 35.1795, lng: 128.1408 },
         { name: '평거동 공설운동장', aliases: ['신안공설운동장', '공설운동장'], addr: '평거동 455', icon: '⚽', lat: 35.1843, lng: 128.0701 },
-        { name: '진주 남강', aliases: ['남강', '칠암동남강변', '망경동남강'], addr: '본성동/칠암동', icon: '🏞️', lat: 35.1880, lng: 128.0850 },
-        { name: '진주 혁신도시', aliases: ['혁신도시', 'LH본사', '충무공동'], addr: '충무공동 LH본사', icon: '🏙️', lat: 35.1710, lng: 128.1440 },
-        { name: '초전동 주민센터', aliases: ['초전동행정복지센터', '초전동'], addr: '초전동 677-1', icon: '🏢', lat: 35.2052, lng: 128.1224 },
+        { name: '칠암동 대학로 안심길', aliases: ['칠암동안심길', '칠암동대학로', '칠암동'], addr: '칠암동 485', icon: '🛡️', lat: 35.1780, lng: 128.0940 },
         { name: '하대동 주민센터', aliases: ['하대동행정복지센터', '하대동'], addr: '하대동 1089-1', icon: '🏢', lat: 35.1924, lng: 128.1201 },
         { name: '상대동 주민센터', aliases: ['상대동행정복지센터', '상대동'], addr: '상대동 297-15', icon: '🏢', lat: 35.1820, lng: 128.1105 },
-        { name: '칠암동 대학로 안심길', aliases: ['칠암동안심길', '칠암동대학로', '칠암동'], addr: '칠암동 485', icon: '🛡️', lat: 35.1780, lng: 128.0940 },
         { name: '평거동 행정복지센터', aliases: ['평거동주민센터', '평거동'], addr: '평거동 916', icon: '🏢', lat: 35.1740, lng: 128.0620 },
         { name: '가좌동 주공아파트', aliases: ['가좌주공', '가좌동'], addr: '가좌동 660', icon: '🏠', lat: 35.1580, lng: 128.1060 },
-        { name: '진주 중앙시장', aliases: ['중앙시장'], addr: '대안동 8-54', icon: '🛍️', lat: 35.1934, lng: 128.0858 }
+        { name: '신진주역 시티프라디움', aliases: ['시티프라디움', '신진주시티프라디움'], addr: '가좌동 1928', icon: '🏢', lat: 35.1505, lng: 128.1140 },
+        { name: '신진주역 센트럴자이', aliases: ['센트럴자이', '신진주자이'], addr: '가좌동 1929', icon: '🏢', lat: 35.1495, lng: 128.1155 }
     ];
 
     // ─── 시간 기반 가로등 점등 여부 판단 ────────────────────────────────
@@ -210,6 +228,45 @@ document.addEventListener('DOMContentLoaded', () => {
         endLatLng = endMarker.getLatLng();
         document.getElementById('input-end').value = `🏁 [위치] ${endLatLng.lat.toFixed(4)}, ${endLatLng.lng.toFixed(4)}`;
         calculateSafeRoute(false, true); // 신규 탐색 → 위치 리셋
+    });
+
+    // ─── 📍 지도 클릭 시 즉시 출발지/도착지 선택 미니 팝업 ─────────────
+    let clickPickerPopup = null;
+    map.on('click', (e) => {
+        if (isSimRunning || isLiveGpsActive) return;
+
+        const content = document.createElement('div');
+        content.className = 'map-quick-picker-box';
+        content.style.cssText = 'font-family:Pretendard,sans-serif; text-align:center; padding:4px 2px; min-width:140px;';
+        content.innerHTML = `
+            <div style="font-weight:800; font-size:12px; margin-bottom:8px; color:#1a1d24;">📍 선택한 위치 지정</div>
+            <div style="display:flex; gap:6px; justify-content:center;">
+                <button id="btn-quick-set-start" style="padding:6px 10px; background:#00FF90; color:#0A101D; border:none; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer; box-shadow:0 2px 6px rgba(0,255,144,0.4);">📍 출발지</button>
+                <button id="btn-quick-set-end" style="padding:6px 10px; background:#FF2A85; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:11px; cursor:pointer; box-shadow:0 2px 6px rgba(255,42,133,0.4);">🏁 도착지</button>
+            </div>
+        `;
+
+        if (clickPickerPopup) map.closePopup(clickPickerPopup);
+        clickPickerPopup = L.popup({ closeButton: false, offset: [0, -10] })
+            .setLatLng(e.latlng)
+            .setContent(content)
+            .openOn(map);
+
+        content.querySelector('#btn-quick-set-start').addEventListener('click', () => {
+            startLatLng = e.latlng;
+            startMarker.setLatLng(startLatLng);
+            document.getElementById('input-start').value = `📍 지도 지정 위치 (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`;
+            map.closePopup(clickPickerPopup);
+            calculateSafeRoute(false, true);
+        });
+
+        content.querySelector('#btn-quick-set-end').addEventListener('click', () => {
+            endLatLng = e.latlng;
+            endMarker.setLatLng(endLatLng);
+            document.getElementById('input-end').value = `🏁 지도 지정 위치 (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`;
+            map.closePopup(clickPickerPopup);
+            calculateSafeRoute(false, true);
+        });
     });
 
     // ─── 인프라 필터링 상태 ──────────────────────────────────────────
@@ -738,22 +795,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // 정규화 (공백, 하이픈 제거, 소문자화)
         const norm = cleanQuery.replace(/[\s\-_]+/g, '').toLowerCase();
 
-        // 2. JINJU_LANDMARKS 우선 정밀 매칭 (완전일치 -> 별칭(aliases) 일치 -> 부분포함 일치)
-        // 2-1. 이름 완전 일치
-        let match = JINJU_LANDMARKS.find(lm => lm.name.replace(/[\s\-_]+/g, '').toLowerCase() === norm);
+        // 2. JINJU_LANDMARKS 우선 정밀 매칭 (완전일치 -> 주요키워드 일치 -> 별칭 일치 -> 부분포함)
+        let match = JINJU_LANDMARKS.find(lm => {
+            const nameNorm = lm.name.replace(/[\s\-_]+/g, '').toLowerCase();
+            if (nameNorm === norm) return true;
+            if (lm.aliases && lm.aliases.some(a => a.replace(/[\s\-_]+/g, '').toLowerCase() === norm)) return true;
+            return false;
+        });
 
-        // 2-2. 별칭(aliases) 일치
-        if (!match) {
-            match = JINJU_LANDMARKS.find(lm =>
-                lm.aliases && lm.aliases.some(a => a.replace(/[\s\-_]+/g, '').toLowerCase() === norm)
-            );
-        }
-
-        // 2-3. 부분 포함 일치 (사용자가 '동명고', '롯데시네마' 등 축약어 입력 시)
+        // 2-2. 주요 키워드 조합 매칭 (예: '해모로' + '4', '동명고', '푸르지오' 등)
         if (!match) {
             match = JINJU_LANDMARKS.find(lm => {
                 const nameNorm = lm.name.replace(/[\s\-_]+/g, '').toLowerCase();
                 const addrNorm = (lm.addr || '').replace(/[\s\-_]+/g, '').toLowerCase();
+
+                if (norm.includes('해모로') && (norm.includes('4') || norm.includes('사')) && nameNorm.includes('4단지')) return true;
+                if (norm.includes('해모로') && (norm.includes('2') || norm.includes('이')) && nameNorm.includes('2단지')) return true;
+                if (norm.includes('동명고') && nameNorm.includes('동명고')) return true;
+                if (norm.includes('동명중') && nameNorm.includes('동명중')) return true;
+
                 const aliasMatch = lm.aliases && lm.aliases.some(a => {
                     const an = a.replace(/[\s\-_]+/g, '').toLowerCase();
                     return norm.includes(an) || an.includes(norm);
@@ -1714,19 +1774,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                const acc = pos.coords.accuracy || 0;
                 startLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
                 startMarker.setLatLng(startLatLng);
                 inputStart.value = '📍 현재 내 위치';
-                map.panTo(startLatLng);
+                map.setView(startLatLng, 16);
                 btn.textContent = '✅ 설정됨'; btn.disabled = false;
                 updateSosLocationDisplay(pos.coords.latitude, pos.coords.longitude);
                 calculateSafeRoute(false);
+
+                // PC 유선망 IP 측위(오차 300m 이상)일 경우 친절한 안내
+                if (acc > 300) {
+                    showDetourAlert('📡 데스크탑 위치 안내', `현재 PC 인터넷망(IP) 기반 측위(오차 약 ${Math.round(acc)}m)로 인해 실제 위치와 다를 수 있습니다. 지도에서 📍 마커를 원하는 곳으로 드래그하거나 아파트/주소를 입력하시면 훨씬 정확합니다.`);
+                }
             },
             (err) => {
                 alert('위치 정보를 가져올 수 없습니다. 브라우저 위치 권한을 확인해 주세요.');
                 btn.textContent = '📡 내위치'; btn.disabled = false;
             },
-            { enableHighAccuracy: true, timeout: 8000 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
     });
 
@@ -1920,10 +1986,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const qNorm = q.replace(/[\s\-_]+/g, '').toLowerCase();
 
-                // 1. 로컬 랜드마크 즉시 매칭 (이름, 주소, 별칭)
+                // 1. 로컬 랜드마크 즉시 매칭 (이름, 주소, 별칭, 스마트 키워드)
                 const localMatches = JINJU_LANDMARKS.filter(lm => {
                     const ln = lm.name.replace(/[\s\-_]+/g, '').toLowerCase();
                     const an = (lm.addr || '').replace(/[\s\-_]+/g, '').toLowerCase();
+                    if (qNorm.includes('해모로') && (qNorm.includes('4') || qNorm.includes('사')) && ln.includes('4단지')) return true;
+                    if (qNorm.includes('해모로') && (qNorm.includes('2') || qNorm.includes('이')) && ln.includes('2단지')) return true;
+                    if (qNorm.includes('동명고') && ln.includes('동명고')) return true;
+                    if (qNorm.includes('동명중') && ln.includes('동명중')) return true;
+
                     const aliasMatch = lm.aliases && lm.aliases.some(a => a.replace(/[\s\-_]+/g, '').toLowerCase().includes(qNorm));
                     return ln.includes(qNorm) || an.includes(qNorm) || aliasMatch;
                 }).map(lm => ({
