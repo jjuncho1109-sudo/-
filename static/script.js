@@ -2415,10 +2415,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCopyModalQr = document.getElementById('btn-copy-modal-qr-url');
 
     if (btnHeaderQr && qrModal) {
-        const host = window.location.hostname;
-        const port = window.location.port || '5000';
-        const pcLanIp = (host && host !== 'localhost' && host !== '127.0.0.1') ? host : '210.222.176.175';
-        const mobileTargetUrl = `http://${pcLanIp}:${port}/`;
+        // 어디서나 접속 가능한 라이브 HTTPS 터널 주소
+        const mobileTargetUrl = 'https://billy-vampire-juice-authority.trycloudflare.com/';
 
         function openQrModal() {
             qrModal.classList.remove('hidden');

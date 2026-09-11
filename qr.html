@@ -198,9 +198,9 @@
   <script>
     let currentUrl = '';
     let qrInstance = null;
+    const liveUrl = 'https://billy-vampire-juice-authority.trycloudflare.com/';
     const localHost = window.location.hostname;
     const localPort = window.location.port || '5000';
-    // PC LAN IP: 210.222.176.175
     const pcIp = (localHost && localHost !== 'localhost' && localHost !== '127.0.0.1') ? localHost : '210.222.176.175';
     const localUrl = `http://${pcIp}:${localPort}/`;
     const ghUrl = 'https://jjuncho1109-sudo.github.io/-/';
@@ -220,13 +220,13 @@
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tab).classList.add('active');
-      if (tab === 'local') {
-        document.getElementById('qr-label').textContent = '스마트폰으로 스캔하여 즉시 접속 (PC와 같은 Wi-Fi)';
-        document.getElementById('step4-text').innerHTML = 'PC와 스마트폰이 <strong>같은 Wi-Fi</strong>(공유기)에 연결되어 있으면 즉시 열립니다';
-        makeQR(localUrl);
+      if (tab === 'live' || tab === 'local') {
+        document.getElementById('qr-label').textContent = '스마트폰/태블릿으로 스캔하여 즉시 접속 (LTE/5G/Wi-Fi 무관)';
+        document.getElementById('step4-text').innerHTML = '보안 HTTPS 연결로 <strong>GPS 위치 권한</strong>까지 완벽하게 지원됩니다';
+        makeQR(liveUrl);
       } else {
         document.getElementById('qr-label').textContent = '인터넷 어디서나 접속 (GitHub Pages)';
-        document.getElementById('step4-text').innerHTML = 'GitHub Pages 활성화 후 모바일 데이터(LTE/5G)로도 <strong>어디서든</strong> 접속 가능합니다';
+        document.getElementById('step4-text').innerHTML = 'GitHub Pages 활성화 후 모바일 데이터로도 접속 가능합니다';
         makeQR(ghUrl);
       }
     }
