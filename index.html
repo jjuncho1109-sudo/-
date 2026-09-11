@@ -15,10 +15,36 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- QRCode JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="static/style.css?v=3">
+    <link rel="stylesheet" href="static/style.css?v=20260912_kakao_v2">
 </head>
 <body>
-    <!-- 상단 헤더 바 -->
+    <!-- 📱 카카오맵 & 네이버 지도 스타일 모바일 상단 플로팅 검색 바 -->
+    <div id="mobile-kakao-header" class="mobile-kakao-header">
+        <div class="mobile-search-card">
+            <div class="mobile-search-logo">🌟</div>
+            <div class="mobile-search-input-box" id="btn-mobile-open-search" title="탭하여 출발지/도착지 설정">
+                <span class="search-icon">🔍</span>
+                <span class="search-placeholder" id="mobile-search-summary">진주시 안심 목적지 검색...</span>
+            </div>
+            <button id="btn-mobile-qr-top" class="mobile-top-btn" title="스마트폰 QR 접속">
+                <span>📱</span>
+            </button>
+            <button id="btn-mobile-night-toggle" class="mobile-top-btn" title="야간 다크모드 전환">
+                <span id="mobile-night-icon">🌙</span>
+            </button>
+        </div>
+
+        <!-- 카카오맵 스타일 가로 스크롤 안심 인프라 필터 칩 바 -->
+        <div class="mobile-chips-scroll">
+            <button class="m-chip active" data-type="all">✨ 전체</button>
+            <button class="m-chip" data-type="cctv">📹 방범 CCTV</button>
+            <button class="m-chip" data-type="light">💡 안심 가로등</button>
+            <button class="m-chip" data-type="night_store">🏪 24시 편의점</button>
+            <button class="m-chip" id="btn-m-heatmap">🌟 조도 히트맵</button>
+        </div>
+    </div>
+
+    <!-- 상단 헤더 바 (PC 전용) -->
     <header id="header">
         <div class="logo-group">
             <span class="logo-icon">🌟</span>
@@ -109,6 +135,17 @@
                     </div>
                     <button id="btn-sheet-toggle" class="sheet-toggle-btn" title="상세 경로 및 옵션 펼치기">
                         <span id="sheet-toggle-icon">▲</span>
+                    </button>
+                </div>
+
+                <!-- 🚀 카카오맵 스타일 메인 내비게이션 시작 CTA 버튼 -->
+                <div class="sheet-peek-actions">
+                    <button id="btn-mobile-start-nav" class="btn-m-nav-start">
+                        <span class="m-nav-icon">🚀</span>
+                        <span class="m-nav-txt" id="btn-m-nav-txt">안심 안내 시작</span>
+                    </button>
+                    <button id="btn-mobile-guardian-open" class="btn-m-guardian" title="가족/보호자 안심 동행 링크 공유">
+                        <span>🛡️ 동행</span>
                     </button>
                 </div>
             </div>
@@ -453,7 +490,7 @@
     </div>
 
     <!-- 스크립트 연결 -->
-    <script src="static/script.js?v=3"></script>
+    <script src="static/script.js?v=20260912_kakao_v2"></script>
     <!-- Service Worker 등록 (오프라인 지원) -->
     <script>
         if ('serviceWorker' in navigator) {

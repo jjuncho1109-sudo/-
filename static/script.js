@@ -2550,6 +2550,85 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 📱 모바일 상단 카카오맵 검색바 탭 시 바텀시트 펼침 및 포커스
+    const btnMobileSearch = document.getElementById('btn-mobile-open-search');
+    if (btnMobileSearch) {
+        btnMobileSearch.addEventListener('click', () => {
+            navPanel?.classList.add('sheet-expanded');
+            setTimeout(() => {
+                const inputEnd = document.getElementById('input-end');
+                if (inputEnd) {
+                    inputEnd.focus();
+                    inputEnd.select();
+                }
+            }, 300);
+        });
+    }
+
+    // 🚀 모바일 메인 내비 시작 CTA 버튼
+    const btnMobileStartNav = document.getElementById('btn-mobile-start-nav');
+    if (btnMobileStartNav) {
+        btnMobileStartNav.addEventListener('click', () => {
+            const liveGpsBtn = document.getElementById('btn-live-gps');
+            if (liveGpsBtn) {
+                liveGpsBtn.click();
+                // 주행이 시작되면 지도를 넓게 보도록 바텀시트 축소
+                navPanel?.classList.remove('sheet-expanded');
+            }
+        });
+    }
+
+    // 🛡️ 모바일 동행 공유 버튼
+    const btnMobileGuardian = document.getElementById('btn-mobile-guardian-open');
+    if (btnMobileGuardian) {
+        btnMobileGuardian.addEventListener('click', () => {
+            const pcGuardianBtn = document.getElementById('btn-guardian-share');
+            if (pcGuardianBtn) pcGuardianBtn.click();
+        });
+    }
+
+    // 📱 모바일 상단 QR 버튼
+    const btnMobileQrTop = document.getElementById('btn-mobile-qr-top');
+    if (btnMobileQrTop) {
+        btnMobileQrTop.addEventListener('click', () => {
+            const pcQrBtn = document.getElementById('btn-header-qr');
+            if (pcQrBtn) pcQrBtn.click();
+        });
+    }
+
+    // 🌙 모바일 상단 야간 다크모드 버튼
+    const btnMobileNight = document.getElementById('btn-mobile-night-toggle');
+    if (btnMobileNight) {
+        btnMobileNight.addEventListener('click', () => {
+            const pcNightBtn = document.getElementById('btn-night-mode');
+            if (pcNightBtn) pcNightBtn.click();
+        });
+    }
+
+    // 🏷️ 모바일 가로 스크롤 필터 칩 연동
+    document.querySelectorAll('.m-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const type = chip.getAttribute('data-type');
+            if (type) {
+                document.querySelectorAll('.m-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const pcChip = document.getElementById('filter-' + type);
+                if (pcChip) pcChip.click();
+            }
+        });
+    });
+
+    const btnMHeatmap = document.getElementById('btn-m-heatmap');
+    if (btnMHeatmap) {
+        btnMHeatmap.addEventListener('click', () => {
+            const pcHeatmap = document.getElementById('btn-heatmap-toggle');
+            if (pcHeatmap) {
+                pcHeatmap.click();
+                btnMHeatmap.classList.toggle('active', isHeatmapActive);
+            }
+        });
+    }
+
     loadSafetySpots().then(() => {
         calculateSafeRoute(false);
         setTimeout(updateSafetyScoreUI, 2000);
