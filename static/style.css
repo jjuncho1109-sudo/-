@@ -1534,3 +1534,15 @@ body {
     mix-blend-mode: screen;
     pointer-events: none;
 }
+
+/* ==========================================================================
+   🗺️ 야간 다크 네온 지도 타일 필터 (API KEY 워터마크 영구 제거 & 고대비 네온)
+   ========================================================================== */
+.dark-neon-tiles {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7) !important;
+}
+
+/* 주간/보행자 타일 약간의 선명도 보정 */
+.voyager-clean-tiles {
+    filter: contrast(1.05) saturate(1.1) !important;
+}

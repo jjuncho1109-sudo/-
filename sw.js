@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biteuro-v1';
+const CACHE_NAME = 'biteuro-v2';
 const STATIC_ASSETS = [
     '/',
     '/static/style.css',

@@ -105,22 +105,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // 카메라 추적 상태 관리 (사용자가 드래그 시 자유 이동 허용)
     let isCameraFollow = true;
 
-    // ─── 고해상도 상세 지도 타일 레이어 정의 ──────────────────────────
+    // ─── 고해상도 상세 지도 타일 레이어 정의 (API 키 제약 및 워터마크 없음) ────
     const tileLayers = {
         detailed_streets: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }),
-        dark_neon: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        dark_neon: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            subdomains: 'abcd'
+            className: 'dark-neon-tiles',
+            attribution: '&copy; OpenStreetMap contributors'
         }),
-        voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        voyager: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            subdomains: 'abcd'
+            className: 'voyager-clean-tiles',
+            attribution: '&copy; OpenStreetMap contributors'
         }),
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19
+            maxZoom: 19,
+            attribution: '&copy; Esri'
         })
     };
 

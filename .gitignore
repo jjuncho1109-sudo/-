@@ -16,3 +16,6 @@ cloudflared.exe
 
 # macOS
 .DS_Store
+
+# Logs
+*.log
