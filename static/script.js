@@ -2608,12 +2608,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCopyModalQr = document.getElementById('btn-copy-modal-qr-url');
 
     if (btnHeaderQr && qrModal) {
-        // 어디서나 접속 가능한 라이브 HTTPS 터널 주소
-        const mobileTargetUrl = 'https://billy-vampire-juice-authority.trycloudflare.com/';
+        // ✅ 현재 접속 중인 URL을 동적으로 감지 (GitHub Pages / 로컬 / 어떤 환경이든 자동)
+        function getMobileTargetUrl() {
+            const loc = window.location;
+            // localhost 또는 127.0.0.1 접속 시 → 실제 로컬 네트워크 IP로 안내
+            if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+                // 로컬 접속이면 GitHub Pages 공개 URL을 우선 사용
+                return 'https://jjuncho1109-sudo.github.io/-/';
+            }
+            // 그 외(GitHub Pages, 터널 등) → 현재 URL 그대로 사용
+            return loc.origin + loc.pathname.replace(/\/$/, '') + '/';
+        }
+        const mobileTargetUrl = getMobileTargetUrl();
 
         function openQrModal() {
             qrModal.classList.remove('hidden');
             if (modalQrUrlText) modalQrUrlText.textContent = mobileTargetUrl;
+
+            // "바로 열기" 버튼 href도 동적 URL로 업데이트
+            const btnOpenUrl = document.getElementById('btn-open-qr-url');
+            if (btnOpenUrl) btnOpenUrl.href = mobileTargetUrl;
             
             if (modalQrCanvas && typeof QRCode !== 'undefined') {
                 modalQrCanvas.innerHTML = '';
