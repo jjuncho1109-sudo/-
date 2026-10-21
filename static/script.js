@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isFpvMode = false;
     let currentBearing = 0;
     let isGuidanceActive = false; // 안내 시작 전(초기 화면)에는 가로등/CCTV 렌더링을 생략하여 렉 완전 방지
+    let currentTransitMode = 'walk'; // 'walk', 'bike', 'car' (도보는 zoom 18 상세 확대 및 실시간 밀착 추적, 자전거/자동차는 zoom 15 표준 내비 뷰)
     
     let allSafeSpots = [];
 
@@ -210,11 +211,73 @@ document.addEventListener('DOMContentLoaded', () => {
         iconAnchor: [13, 26]
     });
 
-    const walkerIcon = L.divIcon({
-        className: 'walker-pin',
-        html: '<div class="character-avatar" id="walker-avatar">🚶</div>',
-        iconAnchor: [17, 17]
-    });
+    function getTransitAvatarHtml(mode = currentTransitMode) {
+        if (mode === 'car') {
+            return '<div class="character-avatar mode-car" id="walker-avatar" title="차량 내비게이션">🚗</div>';
+        } else if (mode === 'bike') {
+            return '<div class="character-avatar mode-bike" id="walker-avatar" title="자전거 내비게이션">🚲</div>';
+        } else {
+            return '<div class="character-avatar mode-walk" id="walker-avatar" title="도보 실시간 안심 내비게이션">🚶</div>';
+        }
+    }
+
+    function createWalkerIcon(mode = currentTransitMode) {
+        return L.divIcon({
+            className: 'walker-pin',
+            html: getTransitAvatarHtml(mode),
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+    }
+
+    let walkerIcon = createWalkerIcon('walk');
+
+    // ─── 🚴🚗🚶 이동 수단 모드 전환 및 시야/추적 프로필 적용 ───────────
+    function setTransitMode(mode) {
+        currentTransitMode = mode;
+        walkerIcon = createWalkerIcon(mode);
+        if (walkerMarker) {
+            walkerMarker.setIcon(walkerIcon);
+        }
+
+        // 버튼 active 상태 동기화
+        document.querySelectorAll('.transit-chip').forEach(c => {
+            if (c.id === `chip-${mode}` || c.classList.contains(mode)) {
+                c.classList.add('active');
+            } else {
+                c.classList.remove('active');
+            }
+        });
+
+        // 모바일 바텀시트 CTA 텍스트 동기화
+        const btnMNavTxt = document.getElementById('btn-m-nav-txt');
+        if (btnMNavTxt) {
+            if (mode === 'walk') btnMNavTxt.textContent = '도보 안심 안내 시작';
+            else if (mode === 'bike') btnMNavTxt.textContent = '자전거 안내 시작';
+            else btnMNavTxt.textContent = '차량 안내 시작';
+        }
+
+        // 안내가 켜져 있으면 해당 이동 수단 시야 프로필 즉각 적용
+        if (isGuidanceActive) {
+            applyTransitViewSettings();
+        }
+
+        const curDist = (currentRouteCoords && currentRouteCoords.length > 0) ? totalRouteDistanceMeters : 1000;
+        updateTransitTimes(curDist);
+    }
+
+    function applyTransitViewSettings() {
+        const targetPos = walkerMarker ? walkerMarker.getLatLng() : startMarker.getLatLng();
+
+        if (currentTransitMode === 'walk') {
+            // 🚶 도보 모드: 보행자 시야에 맞춘 상세 골목·가로등 확대 뷰 (Zoom 18) 및 밀착 실시간 추적
+            map.setView(targetPos, 18, { animate: true });
+            isCameraFollow = true;
+        } else {
+            // 🚗 자동차 / 🚲 자전거 모드: 기존 내비게이션 시야 확보 (Zoom 15 표준 내비 뷰)
+            map.setView(targetPos, 15, { animate: true });
+        }
+    }
 
     const startMarker = L.marker(startLatLng, { icon: startIcon, draggable: true }).addTo(map).bindPopup('<b>출발지</b>');
     const endMarker   = L.marker(endLatLng,   { icon: endIcon,   draggable: true }).addTo(map).bindPopup('<b>도착지</b>');
@@ -1344,16 +1407,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 📱 모바일 카카오맵 스타일 바텀시트 요약 바 동기화
         const elSheetTime = document.getElementById('sheet-peek-time');
-        if (elSheetTime) elSheetTime.textContent = `도보 ${formatTime(walkMin)}`;
+        if (elSheetTime) {
+            if (currentTransitMode === 'car') elSheetTime.textContent = `차량 ${formatTime(carMin)}`;
+            else if (currentTransitMode === 'bike') elSheetTime.textContent = `자전거 ${formatTime(bikeMin)}`;
+            else elSheetTime.textContent = `도보 ${formatTime(walkMin)}`;
+        }
 
         const elSheetDist = document.getElementById('sheet-peek-dist');
         if (elSheetDist) elSheetDist.textContent = `${distKm} km`;
 
         const elSheetSub = document.getElementById('sheet-peek-sub');
         if (elSheetSub) {
+            const modeText = currentTransitMode === 'car' ? '차량 안전 주행' : (currentTransitMode === 'bike' ? '자전거 안심 전용로' : '안심 가로등 보행로');
             const startVal = (document.getElementById('input-start')?.value || '출발지').split(' ')[0];
             const endVal = (document.getElementById('input-end')?.value || '도착지').split(' ')[0];
-            elSheetSub.textContent = `✨ ${startVal} ➔ ${endVal} 안심 가로등길`;
+            elSheetSub.textContent = `✨ ${startVal} ➔ ${endVal} (${modeText})`;
         }
     }
 
@@ -1425,6 +1493,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isGuidanceActive = true;
         renderSafetySpots();
+        applyTransitViewSettings();
         isLiveGpsActive = true;
         isCameraFollow = true;
         btnRecenter.classList.add('hidden');
@@ -1529,8 +1598,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         applyHeadingIndicator(calcHeading);
 
-        if (isCameraFollow && isFpvMode) {
-            map.panTo(currentPos, { animate: true, duration: 0.5 });
+        // 🚶 내가 걸으면 실시간으로 위치 변형 및 카메라 추적
+        if (isCameraFollow) {
+            if (currentTransitMode === 'walk') {
+                // 도보: 줌 18 상세 보행로 확대 유지하면서 부드럽게 실시간 위치 추적
+                if (map.getZoom() < 17) {
+                    map.setView(currentPos, 18, { animate: true });
+                } else {
+                    map.panTo(currentPos, { animate: true, duration: 0.35 });
+                }
+            } else {
+                // 자동차 / 자전거: 줌 15 표준 내비게이션 뷰 유지
+                map.panTo(currentPos, { animate: true, duration: 0.5 });
+            }
         }
 
         // ⏱️ 실시간 잔여 거리 및 도보/자전거/자동차 소요 시간 즉각 갱신
@@ -1645,10 +1725,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isGuidanceActive = true;
         renderSafetySpots();
+        applyTransitViewSettings();
         isSimRunning = true;
         lastSimTimestamp = performance.now();
         btnSimPlay.textContent = '⏸️ 일시정지';
-        simStatusTxt.textContent = '안전 귀가 도보 이동 중...';
+        const modeName = currentTransitMode === 'car' ? '차량 주행' : (currentTransitMode === 'bike' ? '자전거 주행' : '도보 안심');
+        simStatusTxt.textContent = `${modeName} 이동 중...`;
 
         const currentPos = getInterpolatedPointAtDistance(simCurrentDistanceMeters);
         if (!walkerMarker) {
@@ -1689,9 +1771,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const deltaSec = Math.min(0.1, (timestamp - lastSimTimestamp) / 1000);
         lastSimTimestamp = timestamp;
 
-        // 현실적인 실제 도보 속도: 기본 2.5 m/s (약 9 km/h 체감), 배속 곱연산
+        // 현실적인 실제 이동 속도: 도보, 자전거, 자동차 차별화
+        let baseSpeed = 1.6; // 도보 기본 1.6 m/s (약 5.8 km/h 체감)
+        if (currentTransitMode === 'bike') baseSpeed = 4.0; // 자전거 4.0 m/s (약 14.4 km/h)
+        if (currentTransitMode === 'car') baseSpeed = 8.5; // 자동차 8.5 m/s (약 30.6 km/h)
+
         const speedMultiplier = parseFloat(speedSelect.value) || 1.0;
-        const speedMetersPerSec = 2.5 * speedMultiplier;
+        const speedMetersPerSec = baseSpeed * speedMultiplier;
 
         simCurrentDistanceMeters += speedMetersPerSec * deltaSec;
 
@@ -1703,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             simCurrentDistanceMeters = totalRouteDistanceMeters;
             const finalPos = currentRouteCoords[currentRouteCoords.length - 1];
             if (walkerMarker) walkerMarker.setLatLng(finalPos);
-            if (isCameraFollow && isFpvMode) map.panTo(finalPos, { animate: false });
+            if (isCameraFollow) map.panTo(finalPos, { animate: false });
 
             // 도착 시 네온 완전 완료
             updateRouteVisualProgress(finalPos, totalRouteDistanceMeters);
@@ -1730,13 +1816,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // ✂️ 지나간 네온 경로 실시간 삭제 (남은 경로만 네온 유지)
         updateRouteVisualProgress(currentPos, simCurrentDistanceMeters);
 
-        // 사용자가 자유 이동 중이 아닐 때만 카메라를 캐릭터로 추적
-        if (isCameraFollow && isFpvMode) {
-            map.panTo(currentPos, { animate: false });
+        // 🚶 사용자가 자유 이동 중이 아닐 때 카메라를 실시간 캐릭터로 추적 (도보는 zoom 18 상세 확대 유지)
+        if (isCameraFollow) {
+            if (currentTransitMode === 'walk') {
+                if (map.getZoom() < 17) {
+                    map.setView(currentPos, 18, { animate: false });
+                } else {
+                    map.panTo(currentPos, { animate: false });
+                }
+            } else {
+                map.panTo(currentPos, { animate: false });
+            }
         }
 
         showFpvHud(currentPos, nextPos, false);
-        simStatusTxt.textContent = `도보 진행 중: 잔여 ${Math.round(remDist)}m / 총 ${Math.round(totalRouteDistanceMeters)}m`;
+        const modeLabel = currentTransitMode === 'car' ? '차량 주행' : (currentTransitMode === 'bike' ? '자전거 주행' : '도보 진행');
+        simStatusTxt.textContent = `${modeLabel} 중: 잔여 ${Math.round(remDist)}m / 총 ${Math.round(totalRouteDistanceMeters)}m`;
 
         simAnimFrame = requestAnimationFrame(stepSimulation);
     }
@@ -2391,9 +2486,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ⏱️ 이동 수단(도보/자전거/자동차) 칩 탭 인터랙션
     document.querySelectorAll('.transit-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('.transit-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
+        chip.addEventListener('click', (e) => {
+            const el = e.currentTarget;
+            let mode = 'walk';
+            if (el.id === 'chip-car' || el.classList.contains('car')) mode = 'car';
+            else if (el.id === 'chip-bike' || el.classList.contains('bike')) mode = 'bike';
+            setTransitMode(mode);
         });
     });
 
@@ -2652,7 +2750,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnMobileStartNav.addEventListener('click', () => {
             isGuidanceActive = true;
             renderSafetySpots();
-            showDetourAlert('🚀 안심 안내 시작', '경로 주변의 안심 가로등 및 방범 CCTV가 활성화되었습니다.');
+            applyTransitViewSettings();
+            const modeName = currentTransitMode === 'car' ? '차량' : (currentTransitMode === 'bike' ? '자전거' : '도보 상세');
+            const modeMsg = currentTransitMode === 'walk' ? '보행자 상세 줌(18레벨)과 실시간 위치 추적이 활성화되었습니다.' : '안전 내비게이션 시야로 안내를 시작합니다.';
+            showDetourAlert(`🚀 ${modeName} 안심 안내 시작`, modeMsg);
             const liveGpsBtn = document.getElementById('btn-live-gps');
             if (liveGpsBtn) {
                 liveGpsBtn.click();
