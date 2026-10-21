@@ -20,5 +20,7 @@ def get_safety_data():
     return jsonify({"spots": []})
 
 if __name__ == '__main__':
-    # Flask 웹 서버 실행
-    app.run(debug=True, port=5000)
+    # Flask 웹 서버 실행 (macOS 5000번 AirPlay 충돌 방지를 위해 기본 5001번 포트 사용)
+    port = int(os.environ.get('PORT', 5001))
+    print(f"🌟 [빛으로] 로컬 서버 구동 중: http://localhost:{port}")
+    app.run(debug=True, host='0.0.0.0', port=port)

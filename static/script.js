@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeSearchTarget = null;
     let isFpvMode = false;
     let currentBearing = 0;
+    let isGuidanceActive = false; // 안내 시작 전(초기 화면)에는 가로등/CCTV 렌더링을 생략하여 렉 완전 방지
     
     let allSafeSpots = [];
 
@@ -336,6 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
             e.currentTarget.classList.add('active');
             activeInfraFilter = targetType;
+            if (activeInfraFilter !== 'all') {
+                isGuidanceActive = true;
+            }
             renderSafetySpots();
             if (isHeatmapActive) renderHeatmapOverlay();
         });
@@ -411,18 +415,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && data.spots) {
                 // 진주시 경계 밖 오류 데이터 필터링
                 allSafeSpots = data.spots.filter(s => isValidJinjuCoord(s.coords));
-                renderSafetySpots();
+                // 초기 화면에서는 가로등/CCTV 렌더링 생략 (렉 완전 방지)
+                if (isGuidanceActive) {
+                    renderSafetySpots();
+                }
                 const totalBadge = document.getElementById('total-spots-badge');
-                if (totalBadge) totalBadge.textContent = `${allSafeSpots.length.toLocaleString()}개 연동`;
+                if (totalBadge) {
+                    totalBadge.textContent = isGuidanceActive ? `${allSafeSpots.length.toLocaleString()}개 연동` : `${allSafeSpots.length.toLocaleString()}개 준비됨 (안내 시 표시)`;
+                }
             }
         } catch (e) {
             try {
                 let fbRes = await fetch('safe_spots.json');
                 let data = await fbRes.json();
                 allSafeSpots = (data.spots || []).filter(s => isValidJinjuCoord(s.coords));
-                renderSafetySpots();
+                if (isGuidanceActive) {
+                    renderSafetySpots();
+                }
                 const totalBadge = document.getElementById('total-spots-badge');
-                if (totalBadge) totalBadge.textContent = `${allSafeSpots.length.toLocaleString()}개 연동`;
+                if (totalBadge) {
+                    totalBadge.textContent = isGuidanceActive ? `${allSafeSpots.length.toLocaleString()}개 연동` : `${allSafeSpots.length.toLocaleString()}개 준비됨 (안내 시 표시)`;
+                }
             } catch (err) {
                 console.error('데이터 로드 실패:', err);
             }
@@ -432,9 +445,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 지도 줌/이동 시 디바운스 최적화
     let renderDebounceTimer = null;
     map.on('moveend', () => {
+        if (!isGuidanceActive && !isHeatmapActive) return; // 안내 시작 전이면 지도 이동 시 연산 건너뜀 (60fps 완벽 유지)
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
-            renderSafetySpots();
+            if (isGuidanceActive) renderSafetySpots();
             if (isHeatmapActive) renderHeatmapOverlay();
         }, 80);
     });
@@ -443,27 +457,79 @@ document.addEventListener('DOMContentLoaded', () => {
         spotLayerGroup.clearLayers();
         spotLayers.clear();
 
+        // 🌟 초기 화면에서는 가로등/CCTV 렌더링 생략 (렉 완벽 차단)
+        if (!isGuidanceActive) {
+            return;
+        }
+
         const zoom = map.getZoom();
         const bounds = map.getBounds();
         const padBounds = bounds.pad(0.2); // 뷰포트 근접 영역만 계산
         const center = map.getCenter();
 
-        // 1. 현재 화면 영역 안의 스팟 필터링
-        let visibleSpots = allSafeSpots.filter(spot => {
-            if (activeInfraFilter !== 'all' && spot.type !== activeInfraFilter) {
-                return false;
-            }
-            return padBounds.contains(L.latLng(spot.coords[0], spot.coords[1]));
-        });
+        // 1. 현재 화면 및 경로 주변 스팟 필터링
+        let visibleSpots = [];
 
-        // 중심에서 가까운 순으로 정렬하여 최대 120개까지만 상세 렌더링 (렉 완벽 방지)
-        if (visibleSpots.length > 150) {
+        // 경로가 활성화되어 있으면, 경로 주변(120m 이내) 안심 시설만 선별 (렉 원천 차단 및 시인성 극대화)
+        if (currentRouteCoords && currentRouteCoords.length > 0) {
+            // 빠른 Bounding Box 사전 계산
+            let rMinLat = 999, rMaxLat = -999, rMinLng = 999, rMaxLng = -999;
+            for (let i = 0; i < currentRouteCoords.length; i++) {
+                const c = currentRouteCoords[i];
+                if (c.lat < rMinLat) rMinLat = c.lat;
+                if (c.lat > rMaxLat) rMaxLat = c.lat;
+                if (c.lng < rMinLng) rMinLng = c.lng;
+                if (c.lng > rMaxLng) rMaxLng = c.lng;
+            }
+            const margin = 0.002; // 약 150m~200m 마진
+            const bMinLat = rMinLat - margin;
+            const bMaxLat = rMaxLat + margin;
+            const bMinLng = rMinLng - margin;
+            const bMaxLng = rMaxLng + margin;
+
+            visibleSpots = allSafeSpots.filter(spot => {
+                if (activeInfraFilter !== 'all' && spot.type !== activeInfraFilter) {
+                    return false;
+                }
+                const sLat = spot.coords[0];
+                const sLng = spot.coords[1];
+                // 1단계: Bounding Box 고속 검사 (0.1ms)
+                if (sLat < bMinLat || sLat > bMaxLat || sLng < bMinLng || sLng > bMaxLng) {
+                    return false;
+                }
+                if (!padBounds.contains(L.latLng(sLat, sLng))) {
+                    return false;
+                }
+                // 2단계: 실제 경로와의 거리 검사 (120m 이내)
+                return currentRouteCoords.some(pt => 
+                    Math.abs(pt.lat - sLat) < 0.0015 &&
+                    Math.abs(pt.lng - sLng) < 0.0015 &&
+                    getDistance(pt.lat, pt.lng, sLat, sLng) <= 120
+                );
+            });
+        } else {
+            // 경로가 없지만 필터링 칩을 선택한 경우: 화면 내 스팟 표시
+            visibleSpots = allSafeSpots.filter(spot => {
+                if (activeInfraFilter !== 'all' && spot.type !== activeInfraFilter) {
+                    return false;
+                }
+                return padBounds.contains(L.latLng(spot.coords[0], spot.coords[1]));
+            });
+        }
+
+        // 최대 100개까지만 상세 렌더링 (렉 완벽 방지)
+        if (visibleSpots.length > 100) {
             visibleSpots.sort((a, b) => {
                 const da = Math.pow(a.coords[0] - center.lat, 2) + Math.pow(a.coords[1] - center.lng, 2);
                 const db = Math.pow(b.coords[0] - center.lat, 2) + Math.pow(b.coords[1] - center.lng, 2);
                 return da - db;
             });
-            visibleSpots = visibleSpots.slice(0, 150);
+            visibleSpots = visibleSpots.slice(0, 100);
+        }
+
+        const totalBadge = document.getElementById('total-spots-badge');
+        if (totalBadge) {
+            totalBadge.textContent = `${visibleSpots.length}개 안내 중 (총 ${allSafeSpots.length.toLocaleString()}개)`;
         }
 
         visibleSpots.forEach(spot => {
@@ -906,6 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnNav.disabled = true;
 
         try {
+            isGuidanceActive = true;
             const startInputVal = document.getElementById('input-start').value.trim();
             const endInputVal = document.getElementById('input-end').value.trim();
 
@@ -928,6 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             await calculateSafeRoute(false, true); // 신규 탐색 → 위치 리셋
+            renderSafetySpots();
         } catch (err) {
             console.error('안전 경로 탐색 에러:', err);
         } finally {
@@ -1130,6 +1198,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNewNavigation && coords.length > 1) {
             const angle = Math.atan2(coords[1].lng - coords[0].lng, coords[1].lat - coords[0].lat) * (180 / Math.PI);
             applyHeadingIndicator(angle);
+        }
+
+        if (isGuidanceActive) {
+            renderSafetySpots();
         }
     }
 
@@ -1351,6 +1423,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         stopSimulation();
 
+        isGuidanceActive = true;
+        renderSafetySpots();
         isLiveGpsActive = true;
         isCameraFollow = true;
         btnRecenter.classList.add('hidden');
@@ -1510,6 +1584,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (!isGuidanceActive) {
+            isGuidanceActive = true;
+            renderSafetySpots();
+        }
+
         simCurrentDistanceMeters = Math.min(totalRouteDistanceMeters, simCurrentDistanceMeters + 15);
         const currentPos = getInterpolatedPointAtDistance(simCurrentDistanceMeters);
         const nextPos = getInterpolatedPointAtDistance(Math.min(totalRouteDistanceMeters, simCurrentDistanceMeters + 10));
@@ -1564,6 +1643,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        isGuidanceActive = true;
+        renderSafetySpots();
         isSimRunning = true;
         lastSimTimestamp = performance.now();
         btnSimPlay.textContent = '⏸️ 일시정지';
@@ -2569,6 +2650,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnMobileStartNav = document.getElementById('btn-mobile-start-nav');
     if (btnMobileStartNav) {
         btnMobileStartNav.addEventListener('click', () => {
+            isGuidanceActive = true;
+            renderSafetySpots();
+            showDetourAlert('🚀 안심 안내 시작', '경로 주변의 안심 가로등 및 방범 CCTV가 활성화되었습니다.');
             const liveGpsBtn = document.getElementById('btn-live-gps');
             if (liveGpsBtn) {
                 liveGpsBtn.click();
