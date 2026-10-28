@@ -2215,16 +2215,26 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const acc = pos.coords.accuracy || 0;
-                startLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const isInsideJinju = (lat >= 35.05 && lat <= 35.32 && lon >= 127.95 && lon <= 128.30);
+
+                if (!isInsideJinju) {
+                    showDetourAlert('📍 진주시 안심 서비스 안내', '현재 진주시 외 지역에 계셔서 서비스를 원활히 체험하실 수 있도록 출발지를 [진주시청]으로 자동 설정합니다.');
+                    startLatLng = L.latLng(35.1802, 128.1076);
+                    inputStart.value = '📍 진주시청 (현재 위치 체험)';
+                } else {
+                    startLatLng = L.latLng(lat, lon);
+                    inputStart.value = '📍 현재 내 위치';
+                }
+
                 startMarker.setLatLng(startLatLng);
-                inputStart.value = '📍 현재 내 위치';
                 map.setView(startLatLng, 16);
                 btn.textContent = '✅ 설정됨'; btn.disabled = false;
-                updateSosLocationDisplay(pos.coords.latitude, pos.coords.longitude);
-                calculateSafeRoute(false);
+                updateSosLocationDisplay(startLatLng.lat, startLatLng.lng);
+                calculateSafeRoute(false, true);
 
-                // PC 유선망 IP 측위(오차 300m 이상)일 경우 친절한 안내
-                if (acc > 300) {
+                if (isInsideJinju && acc > 300) {
                     showDetourAlert('📡 데스크탑 위치 안내', `현재 PC 인터넷망(IP) 기반 측위(오차 약 ${Math.round(acc)}m)로 인해 실제 위치와 다를 수 있습니다. 지도에서 📍 마커를 원하는 곳으로 드래그하거나 아파트/주소를 입력하시면 훨씬 정확합니다.`);
                 }
             },
@@ -2480,26 +2490,80 @@ document.addEventListener('DOMContentLoaded', () => {
                 ).join('');
                 dropdown.classList.remove('hidden');
 
+                const selectItem = (lat, lng, name) => {
+                    input.value = name;
+                    dropdown.classList.add('hidden');
+                    if (isStart) {
+                        startLatLng = L.latLng(lat, lng);
+                        startMarker.setLatLng(startLatLng);
+                    } else {
+                        endLatLng = L.latLng(lat, lng);
+                        endMarker.setLatLng(endLatLng);
+                        saveRecentSearch(name, lat, lng);
+                    }
+                    map.panTo([lat, lng]);
+                    calculateSafeRoute(false, true);
+                };
+
                 dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
-                    el.addEventListener('click', () => {
-                        const lat = parseFloat(el.dataset.lat);
-                        const lng = parseFloat(el.dataset.lng);
-                        const name = el.dataset.name;
-                        input.value = name;
-                        dropdown.classList.add('hidden');
-                        if (isStart) {
-                            startLatLng = L.latLng(lat, lng);
-                            startMarker.setLatLng(startLatLng);
-                        } else {
-                            endLatLng = L.latLng(lat, lng);
-                            endMarker.setLatLng(endLatLng);
-                            saveRecentSearch(name, lat, lng);
-                        }
-                        map.panTo([lat, lng]);
-                        calculateSafeRoute(false, true);
+                    const lat = parseFloat(el.dataset.lat);
+                    const lng = parseFloat(el.dataset.lng);
+                    const name = el.dataset.name;
+                    el.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        selectItem(lat, lng, name);
+                    });
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        selectItem(lat, lng, name);
                     });
                 });
             }, 180);
+        });
+
+        // ⌨️ Enter 키 입력 시 즉시 해당 장소로 지오코딩 및 경로 계산 (모바일 '이동' 버튼 포함)
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+                dropdown.classList.add('hidden');
+                const val = input.value.trim();
+                if (!val) return;
+                const resolved = await geocodeAddress(val);
+                if (resolved) {
+                    if (isStart) {
+                        startLatLng = resolved;
+                        startMarker.setLatLng(startLatLng);
+                    } else {
+                        endLatLng = resolved;
+                        endMarker.setLatLng(endLatLng);
+                        saveRecentSearch(val, endLatLng.lat, endLatLng.lng);
+                    }
+                    map.panTo(resolved);
+                    calculateSafeRoute(false, true);
+                } else {
+                    alert(`"${val}" 위치를 찾을 수 없습니다. 진주시 내 장소명을 입력해 주세요.`);
+                }
+            }
+        });
+
+        // 🔄 텍스트 입력창 포커스 아웃 / 내용 변경 시 자동 위치 동기화
+        input.addEventListener('change', async () => {
+            dropdown.classList.add('hidden');
+            const val = input.value.trim();
+            if (!val || val.includes('[위치]') || val.includes('현재 내 위치')) return;
+            const resolved = await geocodeAddress(val);
+            if (resolved) {
+                if (isStart) {
+                    startLatLng = resolved;
+                    startMarker.setLatLng(startLatLng);
+                } else {
+                    endLatLng = resolved;
+                    endMarker.setLatLng(endLatLng);
+                    saveRecentSearch(val, endLatLng.lat, endLatLng.lng);
+                }
+                calculateSafeRoute(false, true);
+            }
         });
 
         document.addEventListener('click', (e) => {
@@ -2990,7 +3054,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🚀 모바일 메인 내비 시작 CTA 버튼
     const btnMobileStartNav = document.getElementById('btn-mobile-start-nav');
     if (btnMobileStartNav) {
-        btnMobileStartNav.addEventListener('click', () => {
+        btnMobileStartNav.addEventListener('click', async () => {
+            // 출발지/도착지 입력창에 입력된 텍스트가 있으면 먼저 정확한 위치로 지오코딩 보장
+            const startVal = document.getElementById('input-start')?.value.trim();
+            const endVal = document.getElementById('input-end')?.value.trim();
+
+            if (startVal && !startVal.includes('현재 내 위치') && !startVal.includes('[위치]')) {
+                const resStart = await geocodeAddress(startVal);
+                if (resStart) {
+                    startLatLng = resStart;
+                    startMarker.setLatLng(startLatLng);
+                }
+            }
+            if (endVal && !endVal.includes('[위치]')) {
+                const resEnd = await geocodeAddress(endVal);
+                if (resEnd) {
+                    endLatLng = resEnd;
+                    endMarker.setLatLng(endLatLng);
+                    saveRecentSearch(endVal, endLatLng.lat, endLatLng.lng);
+                }
+            }
+
+            // 최신 위치 기준으로 경로 재계산 (동기화 보장)
+            await calculateSafeRoute(false, true);
+
             if (!currentRouteCoords || !currentRouteCoords.length) {
                 alert('경로를 먼저 검색해주세요!');
                 return;
