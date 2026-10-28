@@ -2422,3 +2422,12 @@ body.fpv-active .mobile-map-fabs,
     display: none !important;
 }
 
+/* 🚀 내비게이션 활성화 시: 바텀시트와 범례를 숨겨 온전한 Apple Maps 내비게이션 화면 모드로 전환 */
+body.guidance-active #nav-panel,
+body.fpv-active #nav-panel,
+body.guidance-active #legend,
+body.fpv-active #legend {
+    display: none !important;
+}
+
+

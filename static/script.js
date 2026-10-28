@@ -44,19 +44,25 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: '진주성', aliases: ['촉석루', '진주성공원'], addr: '남성동 170', icon: '🏯', lat: 35.1935, lng: 128.0811 },
         { name: '국립진주박물관', aliases: ['진주박물관'], addr: '남성동 169-17 (진주성 내)', icon: '🏛️', lat: 35.1940, lng: 128.0808 },
 
-        // 🏥 의료 및 대형 상권
+        // 🏥 의료 및 대형 상권 / 영화관
         { name: '경상국립대학교병원', aliases: ['경상대병원', '진주경상대병원'], addr: '칠암동 90', icon: '🏥', lat: 35.1854, lng: 128.0875 },
         { name: '진주 고려병원', aliases: ['고려병원'], addr: '칠암동 485-2', icon: '🏥', lat: 35.1812, lng: 128.0931 },
         { name: '진주 제일병원', aliases: ['제일병원'], addr: '강남동 181-1', icon: '🏥', lat: 35.1866, lng: 128.0855 },
-        { name: '진주 롯데시네마', aliases: ['롯데시네마', '진주롯데시네마', '롯데시네마진주', '롯데시네마혁신', '롯데몰시네마'], addr: '충무공동 롯데몰 4F', icon: '🎬', lat: 35.1725, lng: 128.1448 },
-        { name: '롯데시네마 프리미엄진주', aliases: ['프리미엄진주', '대안동롯데시네마', '시내롯데시네마'], addr: '대안동 13-11', icon: '🎬', lat: 35.1950, lng: 128.0837 },
-        { name: '롯데시네마 엠비씨네', aliases: ['엠비씨네', 'MBC시네마', '가좌동롯데시네마'], addr: '가좌동 MBC경남', icon: '🎬', lat: 35.1610, lng: 128.1070 },
+        // 🎬 진주시 영화관 (시내 본점 중심 정확 매칭)
+        { name: '롯데시네마 프리미엄진주 (시내)', aliases: ['롯데시네마', '진주롯데시네마', '시내롯데시네마', '대안동롯데시네마', '프리미엄진주', '롯데시네마대안동'], addr: '대안동 13-11 (시내 로데오거리)', icon: '🎬', lat: 35.1950, lng: 128.0837 },
+        { name: '롯데시네마 진주혁신 (롯데몰)', aliases: ['롯데몰시네마', '롯데시네마혁신', '혁신롯데시네마', '충무공동롯데시네마'], addr: '충무공동 35 롯데몰 4F', icon: '🎬', lat: 35.1725, lng: 128.1448 },
+        { name: '롯데시네마 엠비씨네 (가좌동)', aliases: ['엠비씨네', 'MBC시네마', '가좌동롯데시네마', '진주엠비씨네'], addr: '가좌동 606-2 MBC경남', icon: '🎬', lat: 35.1610, lng: 128.1070 },
+        { name: 'CGV 진주 (시내)', aliases: ['CGV', '진주CGV', '시내CGV', '대안동CGV'], addr: '대안동 11-1', icon: '🎬', lat: 35.1938, lng: 128.0845 },
+        { name: 'CGV 진주혁신', aliases: ['혁신CGV', '충무공동CGV'], addr: '충무공동 283-2', icon: '🎬', lat: 35.1764, lng: 128.1512 },
+        { name: '메가박스 진주', aliases: ['메가박스', '진주메가박스', '중안동메가박스'], addr: '중안동 12-13', icon: '🎬', lat: 35.1942, lng: 128.0818 },
         { name: '진주 이마트', aliases: ['이마트', '이마트진주점'], addr: '인사동 8-1', icon: '🛒', lat: 35.1945, lng: 128.0754 },
         { name: '진주 홈플러스', aliases: ['홈플러스', '홈플러스진주점'], addr: '상대동 300-11', icon: '🛒', lat: 35.1782, lng: 128.1143 },
         { name: '진주 롯데마트', aliases: ['롯데마트', '롯데몰', '롯데몰진주점'], addr: '충무공동 35', icon: '🛒', lat: 35.1723, lng: 128.1445 },
         { name: '하대 탑마트', aliases: ['탑마트', '하대동탑마트'], addr: '하대동 315-1', icon: '🛒', lat: 35.1932, lng: 128.1156 },
-        { name: 'CGV 진주', aliases: ['진주CGV', 'CGV'], addr: '대안동 11-1', icon: '🎬', lat: 35.1938, lng: 128.0845 },
         { name: '진주 중앙시장', aliases: ['중앙시장'], addr: '대안동 8-54', icon: '🛍️', lat: 35.1934, lng: 128.0858 },
+        { name: '초전공원', aliases: ['초전공원안심쉼터', '초전체육공원'], addr: '초전동 1324-1', icon: '🌳', lat: 35.2132, lng: 128.1256 },
+        { name: '진주경찰서', aliases: ['경찰서', '진주서'], addr: '중안동 17-1', icon: '👮', lat: 35.1925, lng: 128.0825 },
+        { name: '진주소방서', aliases: ['소방서'], addr: '상대동 283', icon: '🚒', lat: 35.1815, lng: 128.1145 },
 
         // 🏙️ 충무공동 혁신도시 및 평거/신안/하대동 주요 거점
         { name: '진주 혁신도시 LH본사', aliases: ['혁신도시', 'LH본사', '충무공동'], addr: '충무공동 LH본사', icon: '🏙️', lat: 35.1710, lng: 128.1440 },
@@ -1089,25 +1095,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 4. OpenStreetMap Nominatim 외부 지오코딩 (진주시 영역 보장)
+        // 4. OpenStreetMap Nominatim 외부 지오코딩 (진주시 영역 엄격 바운딩)
         try {
             const searchQ = cleanQuery.includes('진주') ? cleanQuery : `진주시 ${cleanQuery}`;
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&limit=3&accept-language=ko`;
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&limit=6&viewbox=128.00,35.28,128.25,35.10&bounded=1&accept-language=ko`;
             const res = await fetch(url, { headers: { 'Accept-Language': 'ko' } });
             const data = await res.json();
             if (data && data.length > 0) {
-                // 진주시 인근(위도 35.0~35.4, 경도 128.0~128.3) 결과 우선 필터링
+                // 진주시 영역(위도 35.08~35.28, 경도 127.98~128.25) 내부 결과만 엄격히 채택
                 const jinjuTarget = data.find(d => {
                     const lat = parseFloat(d.lat);
                     const lon = parseFloat(d.lon);
-                    return lat >= 35.05 && lat <= 35.35 && lon >= 127.95 && lon <= 128.30;
-                }) || data[0];
-
-                console.log(`🌐 [외부 Geocoding 성공] "${cleanQuery}" -> (${jinjuTarget.lat}, ${jinjuTarget.lon})`);
-                return L.latLng(parseFloat(jinjuTarget.lat), parseFloat(jinjuTarget.lon));
+                    return lat >= 35.08 && lat <= 35.28 && lon >= 127.98 && lon <= 128.25;
+                });
+                if (jinjuTarget) {
+                    console.log(`🌐 [진주시 Geocoding 성공] "${cleanQuery}" -> (${jinjuTarget.lat}, ${jinjuTarget.lon})`);
+                    return L.latLng(parseFloat(jinjuTarget.lat), parseFloat(jinjuTarget.lon));
+                }
             }
         } catch (e) {
             console.warn('Geocoding 실패:', e);
+        }
+
+        // 5. 최후의 보루: 진주 시내 중심가(대안동) 인근 안전 스팟으로 fallback
+        if (allSafeSpots && allSafeSpots.length > 0) {
+            const partialSpot = allSafeSpots.find(s => norm.split('').some(ch => (s.name || '').includes(ch)));
+            if (partialSpot) return L.latLng(partialSpot.coords[0], partialSpot.coords[1]);
         }
 
         return null;
@@ -2432,14 +2445,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     lng: lm.lng
                 }));
 
-                // 2. Nominatim 검색 (보조)
+                // 2. Nominatim 검색 (진주시 영역 엄격 바운딩)
                 let nominatimResults = [];
                 if (q.length >= 2 && localMatches.length < 4) {
                     try {
                         const searchQ = q.includes('진주') ? q : `진주시 ${q}`;
-                        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&limit=3&accept-language=ko`);
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&limit=6&viewbox=128.00,35.28,128.25,35.10&bounded=1&accept-language=ko`);
                         const data = await res.json();
-                        nominatimResults = (data || []).map(d => ({
+                        nominatimResults = (data || []).filter(d => {
+                            const lat = parseFloat(d.lat);
+                            const lon = parseFloat(d.lon);
+                            return lat >= 35.08 && lat <= 35.28 && lon >= 127.98 && lon <= 128.25;
+                        }).map(d => ({
                             name: d.display_name.split(',')[0],
                             addr: d.display_name.split(',').slice(1, 3).join(', '),
                             icon: '📍',
@@ -2974,23 +2991,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnMobileStartNav = document.getElementById('btn-mobile-start-nav');
     if (btnMobileStartNav) {
         btnMobileStartNav.addEventListener('click', () => {
+            if (!currentRouteCoords || !currentRouteCoords.length) {
+                alert('경로를 먼저 검색해주세요!');
+                return;
+            }
             isGuidanceActive = true;
+            isFpvMode = true;
             document.body.classList.add('guidance-active');
+            document.body.classList.add('fpv-active');
+
+            // 1. Apple Maps HUD 네비게이션 화면 즉시 노출
             const fpvOv = document.getElementById('fpv-overlay');
             if (fpvOv) fpvOv.classList.remove('hidden');
+
+            // 2. 바텀시트 완전히 가려 내비 화면만 온전히 보이게 처리
+            if (navPanel) {
+                navPanel.classList.remove('sheet-expanded');
+                navPanel.style.display = 'none';
+            }
+
             renderSafetySpots();
             applyTransitViewSettings();
-            const modeName = currentTransitMode === 'car' ? '차량' : (currentTransitMode === 'bike' ? '자전거' : '도보 상세');
-            const modeMsg = currentTransitMode === 'walk' ? '보행자 상세 줌(18레벨)과 실시간 위치 추적이 활성화되었습니다.' : '안전 내비게이션 시야로 안내를 시작합니다.';
-            showDetourAlert(`🚀 ${modeName} 안심 안내 시작`, modeMsg);
-            const liveGpsBtn = document.getElementById('btn-live-gps');
-            if (liveGpsBtn) {
-                liveGpsBtn.click();
+
+            // 3. 네비게이션 시뮬레이터 즉시 가동 (경로 따라 캐릭터 이동 & 회전 안내 실시간 갱신)
+            startSimulation();
+
+            // 4. 초기 HUD 턴바이턴 & 도착 시간/거리 즉시 연동
+            const currentPos = getInterpolatedPointAtDistance(simCurrentDistanceMeters || 0);
+            showFpvHud(currentPos, null, false);
+            updateTransitTimes(totalRouteDistanceMeters - (simCurrentDistanceMeters || 0));
+
+            // 5. 백그라운드 GPS 위치 수신 시작
+            if (navigator.geolocation && !isLiveGpsActive) {
+                startLiveGpsTracking();
             }
-            // 주행이 시작되면 지도를 넓게 보도록 바텀시트 축소
-            navPanel?.classList.remove('sheet-expanded');
-            const tIcon = document.getElementById('sheet-toggle-icon');
-            if (tIcon) tIcon.textContent = '▲';
+
+            const modeName = currentTransitMode === 'car' ? '차량' : (currentTransitMode === 'bike' ? '자전거' : '도보');
+            showDetourAlert(`🚀 ${modeName} 안심 안내 시작`, '실시간 내비게이션 경로 안내를 시작합니다.');
         });
     }
 
@@ -3100,6 +3137,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fpvOv) fpvOv.classList.add('hidden');
             stopSimulation();
             if (isLiveGpsActive) stopLiveGpsTracking();
+
+            // 바텀시트 다시 복원
+            if (navPanel) {
+                navPanel.style.display = '';
+                navPanel.classList.remove('sheet-expanded');
+            }
+
             const btn = document.getElementById('btn-toggle-fpv');
             if (btn) {
                 btn.classList.remove('active');
