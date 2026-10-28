@@ -331,28 +331,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const carHud = document.getElementById('hud-mode-car');
         const roadBadge = document.getElementById('hud-road-badge-overlay');
 
+        // 안정적인 2D 내비게이션 뷰 유지 (왜곡 및 타일 잘림 제거)
+        document.body.classList.remove('car-tilt-active');
+        document.body.classList.toggle('guidance-active', Boolean(isGuidanceActive || isFpvMode));
+
         if (currentTransitMode === 'walk') {
-            // 🚶 도보 모드: 3D 틸트 해제, 보행자 상세 줌 (Zoom 18) 및 밀착 추적
-            document.body.classList.remove('car-tilt-active');
+            // 🚶 도보 모드: 보행자 상세 줌 (Zoom 18) 및 밀착 추적
             if (walkHud) walkHud.classList.remove('hidden');
             if (carHud) carHud.classList.add('hidden');
-            if (roadBadge) {
-                roadBadge.className = 'hud-road-badge walk-style';
-            }
+            if (roadBadge) roadBadge.className = 'hud-road-badge walk-style';
             if (isGuidanceActive || isFpvMode) {
                 map.setView(targetPos, 18, { animate: true });
                 isCameraFollow = true;
             }
-        } else {
-            // 🚗 자동차 / 🚲 자전거 모드: 3D 틸트 원근 뷰 적용 (사진 2), Zoom 17
-            document.body.classList.add('car-tilt-active');
+        } else if (currentTransitMode === 'bike') {
+            // 🚲 자전거 모드: Zoom 17 주행 뷰
             if (walkHud) walkHud.classList.add('hidden');
             if (carHud) carHud.classList.remove('hidden');
-            if (roadBadge) {
-                roadBadge.className = 'hud-road-badge car-style';
-            }
+            if (roadBadge) roadBadge.className = 'hud-road-badge car-style';
             if (isGuidanceActive || isFpvMode) {
                 map.setView(targetPos, 17, { animate: true });
+                isCameraFollow = true;
+            }
+        } else {
+            // 🚗 자동차 모드: 넓은 주행 도로 시야 (Zoom 16)
+            if (walkHud) walkHud.classList.add('hidden');
+            if (carHud) carHud.classList.remove('hidden');
+            if (roadBadge) roadBadge.className = 'hud-road-badge car-style';
+            if (isGuidanceActive || isFpvMode) {
+                map.setView(targetPos, 16, { animate: true });
                 isCameraFollow = true;
             }
         }
@@ -1331,7 +1338,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 신규 탐색 시에만 전체 경로가 보이도록 fitBounds
         if (!isFpvMode && isNewNavigation) {
-            map.fitBounds(currentPolylineGlow.getBounds(), { padding: [50, 50] });
+            if (window.innerWidth <= 768) {
+                // 📱 모바일: 바텀시트를 자동으로 접어 사용자가 직접 내리지 않아도 경로가 바로 보이게 함
+                const navP = document.getElementById('nav-panel');
+                if (navP) navP.classList.remove('sheet-expanded');
+                const tIcon = document.getElementById('sheet-toggle-icon');
+                if (tIcon) tIcon.textContent = '▲';
+
+                map.fitBounds(currentPolylineGlow.getBounds(), {
+                    paddingTopLeft: [30, 40],
+                    paddingBottomRight: [30, 180],
+                    animate: true
+                });
+            } else {
+                map.fitBounds(currentPolylineGlow.getBounds(), { padding: [50, 50] });
+            }
         }
 
         calculateRouteSafetyStats(coords, distMeters, durationSec);
@@ -1555,14 +1576,17 @@ document.addEventListener('DOMContentLoaded', () => {
             btnToggleFpv.classList.add('active');
             btnToggleFpv.querySelector('.txt').textContent = '전체 지도';
             fpvOverlay.classList.remove('hidden');
+            document.body.classList.add('fpv-active');
 
-            // 이동수단별 줌/틸트 설정
+            // 이동수단별 줌 설정
             applyTransitViewSettings();
             showFpvHud(currentPos, null, simCurrentDistanceMeters >= totalRouteDistanceMeters);
         } else {
             btnToggleFpv.classList.remove('active');
             btnToggleFpv.querySelector('.txt').textContent = '1인칭 시점';
             fpvOverlay.classList.add('hidden');
+            document.body.classList.remove('fpv-active');
+            document.body.classList.remove('guidance-active');
             document.body.classList.remove('car-tilt-active');
 
             if (currentPolyline) {
@@ -2951,6 +2975,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnMobileStartNav) {
         btnMobileStartNav.addEventListener('click', () => {
             isGuidanceActive = true;
+            document.body.classList.add('guidance-active');
+            const fpvOv = document.getElementById('fpv-overlay');
+            if (fpvOv) fpvOv.classList.remove('hidden');
             renderSafetySpots();
             applyTransitViewSettings();
             const modeName = currentTransitMode === 'car' ? '차량' : (currentTransitMode === 'bike' ? '자전거' : '도보 상세');
@@ -2959,9 +2986,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const liveGpsBtn = document.getElementById('btn-live-gps');
             if (liveGpsBtn) {
                 liveGpsBtn.click();
-                // 주행이 시작되면 지도를 넓게 보도록 바텀시트 축소
-                navPanel?.classList.remove('sheet-expanded');
             }
+            // 주행이 시작되면 지도를 넓게 보도록 바텀시트 축소
+            navPanel?.classList.remove('sheet-expanded');
+            const tIcon = document.getElementById('sheet-toggle-icon');
+            if (tIcon) tIcon.textContent = '▲';
         });
     }
 
@@ -3065,6 +3094,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isFpvMode = false;
             isGuidanceActive = false;
             document.body.classList.remove('car-tilt-active');
+            document.body.classList.remove('guidance-active');
+            document.body.classList.remove('fpv-active');
             const fpvOv = document.getElementById('fpv-overlay');
             if (fpvOv) fpvOv.classList.add('hidden');
             stopSimulation();

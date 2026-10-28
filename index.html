@@ -15,34 +15,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- QRCode JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="static/style.css?v=20261028_apple_hud_v1">
+    <link rel="stylesheet" href="static/style.css?v=20261028_apple_hud_v2">
 </head>
 <body>
-    <!-- 📱 카카오맵 & 네이버 지도 스타일 모바일 상단 플로팅 검색 바 -->
-    <div id="mobile-kakao-header" class="mobile-kakao-header">
-        <div class="mobile-search-card">
-            <div class="mobile-search-logo">🌟</div>
-            <div class="mobile-search-input-box" id="btn-mobile-open-search" title="탭하여 출발지/도착지 설정">
-                <span class="search-icon">🔍</span>
-                <span class="search-placeholder" id="mobile-search-summary">진주시 안심 목적지 검색...</span>
-            </div>
-            <button id="btn-mobile-qr-top" class="mobile-top-btn desktop-only" title="스마트폰 QR 접속">
-                <span>📱</span>
-            </button>
-            <button id="btn-mobile-night-toggle" class="mobile-top-btn" title="야간 다크모드 전환">
-                <span id="mobile-night-icon">🌙</span>
-            </button>
-        </div>
 
-        <!-- 카카오맵 스타일 가로 스크롤 안심 인프라 필터 칩 바 -->
-        <div class="mobile-chips-scroll">
-            <button class="m-chip active" data-type="all">✨ 전체</button>
-            <button class="m-chip" data-type="cctv">📹 방범 CCTV</button>
-            <button class="m-chip" data-type="light">💡 안심 가로등</button>
-            <button class="m-chip" data-type="night_store">🏪 24시 편의점</button>
-            <button class="m-chip" id="btn-m-heatmap">🌟 조도 히트맵</button>
-        </div>
-    </div>
 
     <!-- 상단 헤더 바 (PC 전용) -->
     <header id="header">
@@ -279,39 +255,7 @@
                     </div>
                 </div>
 
-                <!-- 🚗 🚶 🚲 이동 수단별 예상 소요 시간 (도보, 자전거, 자동차) -->
-                <div class="transit-eta-box">
-                    <div class="transit-eta-header">
-                        <span>⏱️ 이동 수단별 예상 소요 시간</span>
-                        <span class="transit-eta-dist" id="transit-total-dist">-- km</span>
-                    </div>
-                    <div class="transit-eta-grid">
-                        <div class="transit-chip walk active" id="chip-walk" title="성인 평균 보행 속도 (4.2 km/h)">
-                            <div class="transit-chip-top">
-                                <span class="transit-icon">🚶</span>
-                                <span class="transit-title">도보</span>
-                            </div>
-                            <div class="transit-time-val" id="eta-walk-time">--분</div>
-                            <div class="transit-sub-desc">시속 4.2 km</div>
-                        </div>
-                        <div class="transit-chip bike" id="chip-bike" title="도심 자전거 평균 주행 속도 (14 km/h)">
-                            <div class="transit-chip-top">
-                                <span class="transit-icon">🚲</span>
-                                <span class="transit-title">자전거</span>
-                            </div>
-                            <div class="transit-time-val" id="eta-bike-time">--분</div>
-                            <div class="transit-sub-desc">시속 14 km</div>
-                        </div>
-                        <div class="transit-chip car" id="chip-car" title="도심 주행 및 신호 대기 반영 (30 km/h)">
-                            <div class="transit-chip-top">
-                                <span class="transit-icon">🚗</span>
-                                <span class="transit-title">자동차</span>
-                            </div>
-                            <div class="transit-time-val" id="eta-car-time">--분</div>
-                            <div class="transit-sub-desc">신호 대기 반영</div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- 모의 도보 시뮬레이션 및 속도 조절 (PC 전용 개발자 도구) -->
                 <div class="sim-control-box desktop-only">
@@ -360,14 +304,14 @@
                 <span class="recenter-icon">🎯</span> 내 위치로 맞춤
             </button>
 
-            <!-- 📱 모바일 카카오맵/네이버지도 스타일 우측 플로팅 액션 버튼 (FAB) -->
+            <!-- 📱 모바일 우측 플로팅 액션 버튼 (FAB) -->
             <div id="mobile-map-fabs" class="mobile-map-fabs">
+                <button id="btn-mobile-night-toggle" class="fab-circle night" title="야간 다크모드 전환">
+                    <span class="fab-icon" id="mobile-night-icon">🌙</span>
+                </button>
                 <button id="btn-mobile-gps" class="fab-circle gps" title="현재 내 GPS 위치로 지도 맞춤">
                     <span class="fab-icon">📡</span>
                     <span class="fab-label">내위치</span>
-                </button>
-                <button id="btn-mobile-fpv" class="fab-circle fpv" title="1인칭 주행 시점 토글">
-                    <span class="fab-icon">🚶</span>
                 </button>
                 <button id="btn-mobile-heatmap" class="fab-circle heatmap" title="야간 조도 히트맵 토글">
                     <span class="fab-icon">🌟</span>
@@ -609,7 +553,7 @@
     </div>
 
     <!-- 스크립트 연결 -->
-    <script src="static/script.js?v=20261028_apple_hud_v1"></script>
+    <script src="static/script.js?v=20261028_apple_hud_v2"></script>
     <!-- Service Worker 등록 (오프라인 지원) -->
     <script>
         if ('serviceWorker' in navigator) {

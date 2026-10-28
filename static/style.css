@@ -2111,7 +2111,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 12px 14px 18px 14px;
+    padding: calc(env(safe-area-inset-top, 14px) + 8px) 14px calc(env(safe-area-inset-bottom, 16px) + 12px) 14px;
     box-sizing: border-box;
     transition: opacity 0.3s ease;
 }
@@ -2256,7 +2256,7 @@ body {
 .apple-hud-side-btns {
     position: fixed;
     right: 14px;
-    top: 145px;
+    top: calc(env(safe-area-inset-top, 14px) + 125px);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -2408,12 +2408,17 @@ body {
 .btn-hud-share .share-icon {
     font-size: 16px;
 }
-
-/* 차량 주행 시 3D 틸트 원근 효과 */
+/* 차량/자전거 주행 시 깔끔하고 안정적인 2D 맵 유지 (왜곡 및 타일 잘림 제거) */
 .car-tilt-active #map-rotator {
-    perspective: 800px;
-    transform: perspective(800px) rotateX(36deg);
-    transform-origin: center 80%;
-    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+    transform: none !important;
+}
+
+/* 안내 중이거나 HUD 활성화 시 모바일 기본 FAB 숨김 (우측 제어 버튼 겹침 완전 방지) */
+body.guidance-active .mobile-map-fabs,
+body.fpv-active .mobile-map-fabs,
+.apple-nav-overlay:not(.hidden) ~ .mobile-map-fabs,
+.apple-nav-overlay:not(.hidden) ~ #map-wrapper .mobile-map-fabs,
+#map-container:has(.apple-nav-overlay:not(.hidden)) .mobile-map-fabs {
+    display: none !important;
 }
 
