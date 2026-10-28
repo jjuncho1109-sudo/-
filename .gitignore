@@ -13,9 +13,11 @@ venv/
 # Executables / Binaries
 *.exe
 cloudflared.exe
+cloudflared
 
 # macOS
 .DS_Store
 
 # Logs
 *.log
+tunnel_url.txt

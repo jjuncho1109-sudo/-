@@ -76,6 +76,14 @@ body {
     display: none !important;
 }
 
+.desktop-only {
+    display: block;
+}
+
+.mobile-transit-selector {
+    display: none;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1580,9 +1588,59 @@ body {
         overflow: hidden;
     }
 
-    /* 2. ❌ PC용 복잡한 상단 헤더 완전 제거 */
-    #header {
+    /* 2. ❌ PC용 복잡한 상단 헤더, PC 전용 도구(시뮬레이터/소등시험/경로탐색중복버튼), 모바일 QR 버튼 완전 제거 */
+    #header,
+    .desktop-only,
+    #btn-mobile-qr-top {
         display: none !important;
+    }
+
+    /* 🚶 🚲 🚗 모바일 빠른 이동 수단 선택 탭 */
+    .mobile-transit-selector {
+        display: flex !important;
+        gap: 6px;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    .m-transit-chip {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        color: rgba(235, 240, 250, 0.75);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+    }
+    .m-transit-chip.active {
+        background: rgba(0, 255, 163, 0.18);
+        border-color: #00FFA3;
+        color: #00FFA3;
+        box-shadow: 0 0 14px rgba(0, 255, 163, 0.35);
+        transform: translateY(-1px);
+    }
+    .m-transit-chip .m-t-icon {
+        font-size: 16px;
+        line-height: 1;
+        margin-bottom: 2px;
+    }
+    .m-transit-chip .m-t-name {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+    .m-transit-chip .m-t-time {
+        font-size: 12px;
+        font-weight: 900;
+        color: #FFFFFF;
+        margin-top: 1px;
+    }
+    .m-transit-chip.active .m-t-time {
+        color: #00FFA3;
     }
 
     /* 3. 🌟 카카오맵 / 네이버 지도 스타일 모바일 상단 플로팅 검색 & 칩 바 */
@@ -2039,3 +2097,323 @@ body {
     animation: walkRadarPulse 2.5s infinite ease-out;
     pointer-events: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   🍏 애플 지도(Apple Maps) 스타일 초정밀 내비게이션 HUD 시스템
+   (사진 1 도보 안내 & 사진 2 차량 안내 완벽 지원)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.apple-nav-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 14px 18px 14px;
+    box-sizing: border-box;
+    transition: opacity 0.3s ease;
+}
+
+/* 1. 상단 다크 턴바이턴 카드 (사진 1 & 2 공통 폼팩터) */
+.apple-hud-card-top {
+    pointer-events: auto;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    background: rgba(36, 38, 42, 0.94);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.35);
+    padding: 18px 22px 14px 22px;
+    color: #FFFFFF;
+    animation: hudSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hudSlideDown {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* 도보 모드 메인 턴 (사진 1) */
+.hud-main-turn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+.hud-turn-icon-box {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    flex-shrink: 0;
+}
+.hud-svg-turn {
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+.hud-turn-info {
+    flex: 1;
+    min-width: 0;
+}
+.hud-dist-val {
+    font-size: 30px;
+    font-weight: 900;
+    color: #FFFFFF;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+.hud-road-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.82);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 차량 모드 메인 턴 (사진 2) */
+.hud-main-turn.car-style {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+.hud-car-start-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    flex-shrink: 0;
+}
+.hud-svg-circle-arrow {
+    width: 46px;
+    height: 46px;
+}
+.hud-car-title-box {
+    flex: 1;
+    min-width: 0;
+}
+.hud-car-start-txt {
+    font-size: 23px;
+    font-weight: 900;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 서브 턴 지시 (하단 분할 영역) */
+.hud-sub-turn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 10px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 15px;
+    font-weight: 700;
+}
+.hud-sub-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+}
+.hud-svg-sub {
+    width: 20px;
+    height: 20px;
+}
+.hud-sub-road {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 상단 카드 하단 슬라이드 바 */
+.hud-handle-bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 99px;
+    margin: 12px auto 0 auto;
+}
+
+/* 2. 우측 세로 제어 버튼 (사진 1 & 2 동일) */
+.apple-hud-side-btns {
+    position: fixed;
+    right: 14px;
+    top: 145px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+    z-index: 1250;
+}
+.hud-side-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    color: #111111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    transition: transform 0.15s, background 0.2s;
+}
+.hud-side-btn svg {
+    width: 24px;
+    height: 24px;
+}
+.hud-side-btn:active {
+    transform: scale(0.92);
+}
+.hud-side-btn.exit {
+    background: rgba(30, 32, 36, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    font-weight: 900;
+    font-size: 16px;
+}
+
+/* 3. 지도 위 현재 도로명 캡슐 뱃지 */
+.hud-road-badge {
+    position: fixed;
+    bottom: 175px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1100;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 7px 18px;
+    border-radius: 100px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    letter-spacing: -0.01em;
+    transition: all 0.25s ease;
+}
+.hud-road-badge.walk-style {
+    background: #FFFFFF;
+    color: #007AFF;
+    border: 1.5px solid rgba(0, 122, 255, 0.35);
+}
+.hud-road-badge.car-style {
+    background: #007AFF;
+    color: #FFFFFF;
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 122, 255, 0.6);
+}
+
+/* 4. 하단 라이트 글래스 카드 (사진 1 & 2 공통) */
+.apple-hud-card-bottom {
+    pointer-events: auto;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    background: rgba(246, 249, 242, 0.96);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.45);
+    padding: 12px 20px 18px 20px;
+    color: #1D1D1F;
+    animation: hudSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hudSlideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.hud-bottom-drag-pill {
+    width: 38px;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 99px;
+    margin: 0 auto 12px auto;
+}
+
+.hud-bottom-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin-bottom: 12px;
+}
+
+.hud-metric-item {
+    text-align: center;
+    flex: 1;
+}
+
+.hud-metric-val {
+    font-size: 28px;
+    font-weight: 900;
+    color: #000000;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.hud-metric-lbl {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6E6E73;
+    margin-top: 3px;
+}
+
+.hud-metric-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.btn-hud-share {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px 4px 16px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    font-weight: 800;
+    color: #007AFF;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-hud-share:active {
+    opacity: 0.65;
+}
+.btn-hud-share .share-icon {
+    font-size: 16px;
+}
+
+/* 차량 주행 시 3D 틸트 원근 효과 */
+.car-tilt-active #map-rotator {
+    perspective: 800px;
+    transform: perspective(800px) rotateX(36deg);
+    transform-origin: center 80%;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+

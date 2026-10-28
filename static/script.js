@@ -72,35 +72,73 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     // ─── 시간 기반 가로등 점등 여부 판단 ────────────────────────────────
-    // 실제 가로등은 일몰(18:00)~일출(06:00)에만 점등. 낮에는 꺼져 있음.
+    // 실제 가로등은 일몰(18:00)~일출(06:00)에만 점등. 낮에는 태양광(자연광)이 밝힘.
     function isLightActive(spot) {
-        if (spot.type !== 'light') return spot.status === 'active';
+        if (spot.blackout) return false;
         if (spot.status === 'out') return false; // 고장/신고 처리된 경우
+        if (spot.type === 'night_store' || spot.type === 'cctv') return true; // 24시간 작동
         const hour = new Date().getHours();
-        // 06:00 ~ 18:00 는 낮 → 가로등 꺼짐 (귀갓길 위험도 반영 불필요)
-        // 18:00 ~ 06:00 는 밤 → 가로등 켜짐 (안심 경로 점수 반영)
         return hour >= 18 || hour < 6;
     }
 
-    // 경로 위 조명 밀도 점수 계산 (0.0 ~ 1.0, 높을수록 밝음)
+    // 🛡️ 종합 안심 귀가 안전 점수 계산기 (가로등+CCTV+24시편의점 복합 평가)
     function calcRouteLightingScore(routeCoords) {
-        if (!routeCoords || routeCoords.length === 0) return 1;
-        const sampleCount = Math.min(15, routeCoords.length);
-        const step = Math.floor(routeCoords.length / sampleCount);
-        let totalLit = 0;
-        let totalChecked = 0;
+        if (!routeCoords || routeCoords.length === 0) return 0.95;
+        const hour = new Date().getHours();
+        const isNight = hour >= 18 || hour < 6;
+        const sampleCount = Math.min(20, routeCoords.length);
+        const step = Math.max(1, Math.floor(routeCoords.length / sampleCount));
+        
+        let samplePointsChecked = 0;
+        let cctvCount = 0;
+        let storeCount = 0;
+        let litLightCount = 0;
+        let blackoutCount = 0;
+
         for (let i = 0; i < routeCoords.length; i += step) {
             const pt = routeCoords[i];
+            samplePointsChecked++;
             const nearby = allSafeSpots.filter(s =>
-                (s.type === 'light' || s.type === 'cctv') &&
-                getDistance(pt.lat, pt.lng, s.coords[0], s.coords[1]) < 50
+                getDistance(pt.lat, pt.lng, s.coords[0], s.coords[1]) < 70
             );
-            const lit = nearby.filter(s => isLightActive(s)).length;
-            totalLit += lit;
-            totalChecked += nearby.length;
+
+            nearby.forEach(s => {
+                if (s.blackout || s.status === 'out') {
+                    blackoutCount++;
+                } else if (s.type === 'cctv') {
+                    cctvCount++;
+                } else if (s.type === 'night_store') {
+                    storeCount++;
+                } else if (s.type === 'light') {
+                    if (isNight && isLightActive(s)) {
+                        litLightCount++;
+                    }
+                }
+            });
         }
-        if (totalChecked === 0) return 0;
-        return totalLit / totalChecked;
+
+        if (samplePointsChecked === 0) return 0.92;
+
+        let baseScore = 0;
+        if (isNight) {
+            // 야간 점수: 점등 가로등 밀도(45%) + CCTV 감시망(35%) + 24시 상점(20%)
+            const lightScore = Math.min(1.0, (litLightCount / (samplePointsChecked * 1.5)));
+            const cctvScore = Math.min(1.0, (cctvCount / (samplePointsChecked * 1.2)));
+            const storeScore = Math.min(1.0, (storeCount / (samplePointsChecked * 0.5)));
+            baseScore = 0.50 + (lightScore * 0.25) + (cctvScore * 0.15) + (storeScore * 0.10);
+        } else {
+            // 주간 점수: 기본 주간 일조/시야 점수(85%) + CCTV(10%) + 안심편의점(5%)
+            const cctvScore = Math.min(1.0, (cctvCount / (samplePointsChecked * 1.0)));
+            const storeScore = Math.min(1.0, (storeCount / (samplePointsChecked * 0.5)));
+            baseScore = 0.85 + (cctvScore * 0.10) + (storeScore * 0.05);
+        }
+
+        // 소등(blackout) 시험 시 감점 반영
+        if (blackoutCount > 0) {
+            baseScore = Math.max(0.20, baseScore - (blackoutCount * 0.12));
+        }
+
+        return Math.max(0.15, Math.min(0.99, baseScore));
     }
     let spotLayers = new Map();
     let currentRouteCoords = [];
@@ -240,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             walkerMarker.setIcon(walkerIcon);
         }
 
-        // 버튼 active 상태 동기화
+        // 1. PC 칩 active 상태 동기화
         document.querySelectorAll('.transit-chip').forEach(c => {
             if (c.id === `chip-${mode}` || c.classList.contains(mode)) {
                 c.classList.add('active');
@@ -249,7 +287,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 모바일 바텀시트 CTA 텍스트 동기화
+        // 2. 모바일 빠른 칩 active 상태 동기화
+        document.querySelectorAll('.m-transit-chip').forEach(c => {
+            if (c.getAttribute('data-mode') === mode || c.id === `m-chip-${mode}`) {
+                c.classList.add('active');
+            } else {
+                c.classList.remove('active');
+            }
+        });
+
+        // 3. HUD 우측 이동수단 토글 아이콘 동기화
+        const hudTransitIcon = document.getElementById('hud-transit-icon');
+        if (hudTransitIcon) {
+            hudTransitIcon.textContent = mode === 'walk' ? '🚶' : (mode === 'bike' ? '🚲' : '🚗');
+        }
+
+        // 4. 모바일 바텀시트 CTA 텍스트 동기화
         const btnMNavTxt = document.getElementById('btn-m-nav-txt');
         if (btnMNavTxt) {
             if (mode === 'walk') btnMNavTxt.textContent = '도보 안심 안내 시작';
@@ -257,25 +310,51 @@ document.addEventListener('DOMContentLoaded', () => {
             else btnMNavTxt.textContent = '차량 안내 시작';
         }
 
-        // 안내가 켜져 있으면 해당 이동 수단 시야 프로필 즉각 적용
-        if (isGuidanceActive) {
-            applyTransitViewSettings();
-        }
+        // 5. 시야 프로필 및 HUD 뷰 동기화
+        applyTransitViewSettings();
 
         const curDist = (currentRouteCoords && currentRouteCoords.length > 0) ? totalRouteDistanceMeters : 1000;
         updateTransitTimes(curDist);
+
+        // HUD가 활성화되어 있는 경우 HUD 화면 즉시 재렌더링
+        if (isGuidanceActive || isFpvMode) {
+            const curPos = walkerMarker ? walkerMarker.getLatLng() : (startMarker ? startMarker.getLatLng() : null);
+            if (curPos) showFpvHud(curPos, null, false);
+        }
     }
 
     function applyTransitViewSettings() {
-        const targetPos = walkerMarker ? walkerMarker.getLatLng() : startMarker.getLatLng();
+        const targetPos = walkerMarker ? walkerMarker.getLatLng() : (startMarker ? startMarker.getLatLng() : null);
+        if (!targetPos) return;
+
+        const walkHud = document.getElementById('hud-mode-walk');
+        const carHud = document.getElementById('hud-mode-car');
+        const roadBadge = document.getElementById('hud-road-badge-overlay');
 
         if (currentTransitMode === 'walk') {
-            // 🚶 도보 모드: 보행자 시야에 맞춘 상세 골목·가로등 확대 뷰 (Zoom 18) 및 밀착 실시간 추적
-            map.setView(targetPos, 18, { animate: true });
-            isCameraFollow = true;
+            // 🚶 도보 모드: 3D 틸트 해제, 보행자 상세 줌 (Zoom 18) 및 밀착 추적
+            document.body.classList.remove('car-tilt-active');
+            if (walkHud) walkHud.classList.remove('hidden');
+            if (carHud) carHud.classList.add('hidden');
+            if (roadBadge) {
+                roadBadge.className = 'hud-road-badge walk-style';
+            }
+            if (isGuidanceActive || isFpvMode) {
+                map.setView(targetPos, 18, { animate: true });
+                isCameraFollow = true;
+            }
         } else {
-            // 🚗 자동차 / 🚲 자전거 모드: 기존 내비게이션 시야 확보 (Zoom 15 표준 내비 뷰)
-            map.setView(targetPos, 15, { animate: true });
+            // 🚗 자동차 / 🚲 자전거 모드: 3D 틸트 원근 뷰 적용 (사진 2), Zoom 17
+            document.body.classList.add('car-tilt-active');
+            if (walkHud) walkHud.classList.add('hidden');
+            if (carHud) carHud.classList.remove('hidden');
+            if (roadBadge) {
+                roadBadge.className = 'hud-road-badge car-style';
+            }
+            if (isGuidanceActive || isFpvMode) {
+                map.setView(targetPos, 17, { animate: true });
+                isCameraFollow = true;
+            }
         }
     }
 
@@ -1423,6 +1502,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const endVal = (document.getElementById('input-end')?.value || '도착지').split(' ')[0];
             elSheetSub.textContent = `✨ ${startVal} ➔ ${endVal} (${modeText})`;
         }
+
+        // 📱 모바일 빠른 이동수단 칩 예상 시간 동기화
+        const elMWalk = document.getElementById('m-time-walk');
+        if (elMWalk) elMWalk.textContent = formatTime(walkMin);
+        const elMBike = document.getElementById('m-time-bike');
+        if (elMBike) elMBike.textContent = formatTime(bikeMin);
+        const elMCar = document.getElementById('m-time-car');
+        if (elMCar) elMCar.textContent = formatTime(carMin);
+
+        // Apple Maps HUD 하단 시계/시간/거리 동기화
+        const curMin = currentTransitMode === 'car' ? carMin : (currentTransitMode === 'bike' ? bikeMin : walkMin);
+        const now = new Date();
+        const etaMs = now.getTime() + curMin * 60 * 1000;
+        const etaDate = new Date(etaMs);
+        const etaHH = etaDate.getHours().toString().padStart(2, '0');
+        const etaMM = etaDate.getMinutes().toString().padStart(2, '0');
+        const elHudEta = document.getElementById('hud-eta-clock');
+        if (elHudEta) elHudEta.textContent = `${etaHH}:${etaMM}`;
+        const elHudMin = document.getElementById('hud-remain-min');
+        if (elHudMin) elHudMin.textContent = `${curMin}`;
+        const elHudDist = document.getElementById('hud-remain-dist');
+        if (elHudDist) elHudDist.textContent = distKm;
     }
 
     // ─── 🚶 1인칭 네비게이션 시점 토글 ────────────────────────────────
@@ -1455,16 +1556,18 @@ document.addEventListener('DOMContentLoaded', () => {
             btnToggleFpv.querySelector('.txt').textContent = '전체 지도';
             fpvOverlay.classList.remove('hidden');
 
-            map.setView(currentPos, 18, { animate: true });
+            // 이동수단별 줌/틸트 설정
+            applyTransitViewSettings();
             showFpvHud(currentPos, null, simCurrentDistanceMeters >= totalRouteDistanceMeters);
         } else {
             btnToggleFpv.classList.remove('active');
             btnToggleFpv.querySelector('.txt').textContent = '1인칭 시점';
             fpvOverlay.classList.add('hidden');
+            document.body.classList.remove('car-tilt-active');
 
             if (currentPolyline) {
                 map.fitBounds(currentPolyline.getBounds(), { padding: [50, 50] });
-            } else {
+            } else if (startMarker) {
                 map.setView(startMarker.getLatLng(), 15);
             }
         }
@@ -1836,38 +1939,113 @@ document.addEventListener('DOMContentLoaded', () => {
         simAnimFrame = requestAnimationFrame(stepSimulation);
     }
 
-    // ─── 1인칭 HUD 안내 업데이트 ──────────────────────────────────────
+    // ─── 🍏 Apple Maps 스타일 HUD 안내 업데이트 ─────────────────────────
     function showFpvHud(currentPos, nextPos, isFinished) {
+        // 도착 시 완료 메시지 처리
         if (isFinished) {
-            document.getElementById('fpv-next-spot').textContent = '🏁 목적지 안전 도착';
-            document.getElementById('fpv-route-hint').textContent = '무사히 귀가하였습니다. 편안한 밤 되세요!';
-            document.getElementById('fpv-arrow').textContent = '🎉';
+            const walkDistVal = document.getElementById('walk-dist-val');
+            const walkRoadName = document.getElementById('walk-road-name');
+            const carStartTxt = document.getElementById('car-start-txt');
+            if (walkDistVal) walkDistVal.textContent = '도착';
+            if (walkRoadName) walkRoadName.textContent = '🏁 안전 귀가 완료';
+            if (carStartTxt) carStartTxt.textContent = '🏁 목적지 도착';
+            const hudRoadBadge = document.getElementById('hud-current-road-name');
+            if (hudRoadBadge) hudRoadBadge.textContent = '도착';
+            const hudMin = document.getElementById('hud-remain-min');
+            if (hudMin) hudMin.textContent = '0';
+            const hudDist = document.getElementById('hud-remain-dist');
+            if (hudDist) hudDist.textContent = '0';
+            const hudEta = document.getElementById('hud-eta-clock');
+            if (hudEta) {
+                const now = new Date();
+                hudEta.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            }
             return;
         }
 
+        // 경로상 가장 가까운 안심 스팟 탐색
         let closestSafeSpot = null;
         let minDist = Infinity;
-
         allSafeSpots.forEach(spot => {
-            if (spot.status === 'active') {
+            if (spot.status === 'active' && !spot.blackout) {
                 const d = getDistance(currentPos.lat, currentPos.lng, spot.coords[0], spot.coords[1]);
-                if (d < minDist) {
-                    minDist = d;
-                    closestSafeSpot = spot;
-                }
+                if (d < minDist) { minDist = d; closestSafeSpot = spot; }
             }
         });
 
-        if (closestSafeSpot && minDist < 50) {
-            const spotTypeIcon = closestSafeSpot.type === 'night_store' ? '🏪' : (closestSafeSpot.type === 'cctv' ? '📹' : '💡');
-            document.getElementById('fpv-next-spot').textContent = `${Math.round(minDist)}m 앞 ${spotTypeIcon} ${closestSafeSpot.name}`;
-            document.getElementById('fpv-route-hint').textContent = '환하게 밝혀진 안심 귀가 구간을 통과하고 있습니다.';
-            document.getElementById('fpv-brightness').textContent = '🟢 안전 밝기: 매우 우수';
+        // 현재 경로 구간에서 다음 회전점까지 거리 / 다음 도로명 계산
+        const simIdx = Math.min(
+            Math.floor(simCurrentDistanceMeters / Math.max(1, totalRouteDistanceMeters) * currentRouteCoords.length),
+            currentRouteCoords.length - 1
+        );
+        const nextIdx = Math.min(simIdx + Math.max(1, Math.round(currentRouteCoords.length / 15)), currentRouteCoords.length - 1);
+        const nextPt = currentRouteCoords[nextIdx];
+        const distToNext = nextPt ? Math.round(getDistance(currentPos.lat, currentPos.lng, nextPt.lat, nextPt.lng)) : 0;
+
+        // 방위각 계산 → 방향 화살표 종류 결정 (직진/우회전/좌회전)
+        const bearing = currentBearing;
+        const normalized = (bearing % 360 + 360) % 360;
+        let turnSvgPath1, turnSvgPath2;
+        // 간단한 방향 판별 (대략 직진/우/좌로 구분)
+        if (normalized >= 340 || normalized < 20) {
+            // 직진
+            turnSvgPath1 = 'M24 36V12';
+            turnSvgPath2 = 'M14 22L24 12L34 22';
+        } else if (normalized >= 20 && normalized < 180) {
+            // 우회전
+            turnSvgPath1 = 'M14 36V22C14 15.3726 19.3726 10 26 10H38';
+            turnSvgPath2 = 'M28 2L38 10L28 18';
         } else {
-            document.getElementById('fpv-next-spot').textContent = '안심 가로등 보도 따라 직진 중';
-            document.getElementById('fpv-route-hint').textContent = '다음 안심 스팟으로 이동 중입니다.';
-            document.getElementById('fpv-brightness').textContent = '🟡 보통 밝기 구간';
+            // 좌회전
+            turnSvgPath1 = 'M34 36V22C34 15.3726 28.6274 10 22 10H10';
+            turnSvgPath2 = 'M20 2L10 10L20 18';
         }
+
+        // Apple Maps HUD 도보 상단 카드 업데이트
+        const walkTurnIcon = document.getElementById('walk-turn-icon');
+        if (walkTurnIcon) {
+            walkTurnIcon.innerHTML = `
+                <svg class="hud-svg-turn" viewBox="0 0 48 48" fill="none">
+                    <path d="${turnSvgPath1}" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="${turnSvgPath2}" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`;
+        }
+        const walkDistVal = document.getElementById('walk-dist-val');
+        if (walkDistVal) walkDistVal.textContent = distToNext >= 1000 ? `${(distToNext/1000).toFixed(1)}km` : `${distToNext}m`;
+
+        // 가까운 안심 스팟을 도로명/목적지로 사용
+        const roadName = closestSafeSpot ? closestSafeSpot.name : '안심 귀가로 직진';
+        const walkRoadName = document.getElementById('walk-road-name');
+        if (walkRoadName) walkRoadName.textContent = roadName;
+
+        // 서브 턴 (다음 다음 도로명/회전): 잔여 경로 중간 스팟
+        const midIdx = Math.min(simIdx + Math.round(currentRouteCoords.length / 6), currentRouteCoords.length - 1);
+        const midPt = currentRouteCoords[midIdx];
+        let subSpot = null;
+        if (midPt) {
+            let minSubD = Infinity;
+            allSafeSpots.forEach(spot => {
+                if (spot.status === 'active' && !spot.blackout) {
+                    const d = getDistance(midPt.lat, midPt.lng, spot.coords[0], spot.coords[1]);
+                    if (d < minSubD) { minSubD = d; subSpot = spot; }
+                }
+            });
+        }
+        const walkSubRoad = document.getElementById('walk-sub-road');
+        if (walkSubRoad) walkSubRoad.textContent = subSpot ? subSpot.name : '경로 따라 계속 진행';
+
+        // 차량 모드 상단 카드: 현재 도로명에서 출발 + 다음 회전
+        const carStartTxt = document.getElementById('car-start-txt');
+        if (carStartTxt) carStartTxt.textContent = `${roadName}에서 계속`;
+        const carSubTurnTxt = document.getElementById('car-sub-turn-txt');
+        if (carSubTurnTxt) {
+            const turnWord = (normalized >= 20 && normalized < 180) ? '우회전' : (normalized >= 180 && normalized < 340 ? '좌회전' : '직진');
+            carSubTurnTxt.textContent = turnWord;
+        }
+
+        // 현재 도로명 중앙 뱃지 업데이트
+        const hudRoadBadge = document.getElementById('hud-current-road-name');
+        if (hudRoadBadge) hudRoadBadge.textContent = roadName;
     }
 
     // ─── 주소 검색 (Nominatim 무료 API) ──────────────────────────────
@@ -2302,24 +2480,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyNightMode(enabled) {
         nightModeEnabled = enabled;
-        document.documentElement.setAttribute('data-theme', enabled ? 'night' : 'auto');
+        document.documentElement.setAttribute('data-theme', enabled ? 'night' : 'light');
         const btn = document.getElementById('btn-night-mode');
         const icon = document.getElementById('night-mode-icon');
         const txt = document.getElementById('night-mode-txt');
+        const mobileIcon = document.getElementById('mobile-night-icon');
+
         if (enabled) {
-            btn.classList.add('active');
-            icon.textContent = '🌙';
-            txt.textContent = '야간모드 ON';
+            if (btn) btn.classList.add('active');
+            if (icon) icon.textContent = '🌙';
+            if (txt) txt.textContent = '야간모드 ON';
+            if (mobileIcon) mobileIcon.textContent = '☀️'; // 누르면 주간으로 갈 수 있음을 안내
             // 지도 타일도 다크 네온으로 자동 전환
             const sel = document.getElementById('map-style-select');
-            if (sel.value !== 'dark_neon') {
+            if (sel && sel.value !== 'dark_neon') {
                 sel.value = 'dark_neon';
                 sel.dispatchEvent(new Event('change'));
             }
         } else {
-            btn.classList.remove('active');
-            icon.textContent = '☀️';
-            txt.textContent = '주간모드';
+            if (btn) btn.classList.remove('active');
+            if (icon) icon.textContent = '☀️';
+            if (txt) txt.textContent = '주간모드';
+            if (mobileIcon) mobileIcon.textContent = '🌙'; // 누르면 야간으로 갈 수 있음을 안내
+            // 지도 타일을 원래의 밝고 선명한 주간 타일로 복구
+            const sel = document.getElementById('map-style-select');
+            if (sel && sel.value === 'dark_neon') {
+                sel.value = 'detailed_streets';
+                sel.dispatchEvent(new Event('change'));
+            }
         }
     }
 
@@ -2347,10 +2535,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const bar = document.getElementById('safety-score-bar');
         const label = document.getElementById('safety-score-label');
         const hudScore = document.getElementById('hud-score');
+        const peekSafety = document.getElementById('sheet-peek-safety');
 
-        if (!bar) return;
-
-        bar.style.width = pct + '%';
+        if (bar) bar.style.width = pct + '%';
 
         let color, text, hudVal;
         if (pct >= 80) {
@@ -2371,9 +2558,10 @@ document.addEventListener('DOMContentLoaded', () => {
             hudVal = Math.max(10, pct);
         }
 
-        bar.style.background = `linear-gradient(90deg, ${color}80, ${color})`;
+        if (bar) bar.style.background = `linear-gradient(90deg, ${color}80, ${color})`;
         if (label) label.textContent = text;
         if (hudScore) hudScore.textContent = hudVal;
+        if (peekSafety) peekSafety.textContent = `🛡️ 안심 ${pct}점`;
     }
 
     // 경로가 그려질 때마다 안전 점수 갱신
@@ -2825,6 +3013,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 pcHeatmap.click();
                 btnMHeatmap.classList.toggle('active', isHeatmapActive);
             }
+        });
+    }
+
+    // 🚶🚲🚗 모바일 빠른 이동수단 선택 칩 이벤트 연결
+    document.querySelectorAll('.m-transit-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const mode = chip.getAttribute('data-mode');
+            if (mode) setTransitMode(mode);
+        });
+    });
+
+    // 🍏 Apple Maps HUD 사이드 버튼 이벤트
+    // 1. 이동수단 토글 버튼 (도보 → 자전거 → 차량 순환)
+    const btnHudTransit = document.getElementById('btn-hud-transit-toggle');
+    if (btnHudTransit) {
+        btnHudTransit.addEventListener('click', () => {
+            const modes = ['walk', 'bike', 'car'];
+            const curIdx = modes.indexOf(currentTransitMode);
+            const nextMode = modes[(curIdx + 1) % modes.length];
+            setTransitMode(nextMode);
+        });
+    }
+
+    // 2. 전체 경로 조망 버튼
+    const btnHudOverview = document.getElementById('btn-hud-overview');
+    if (btnHudOverview) {
+        btnHudOverview.addEventListener('click', () => {
+            if (currentPolyline) {
+                map.fitBounds(currentPolyline.getBounds(), { padding: [80, 80], animate: true });
+            }
+        });
+    }
+
+    // 3. 음성 안내 토글 (mute/unmute)
+    const btnHudMute = document.getElementById('btn-hud-mute');
+    if (btnHudMute) {
+        let isMuted = false;
+        btnHudMute.addEventListener('click', () => {
+            isMuted = !isMuted;
+            btnHudMute.title = isMuted ? '음성 안내 켜기' : '음성 안내 끄기';
+            btnHudMute.style.opacity = isMuted ? '0.45' : '1.0';
+        });
+    }
+
+    // 4. 안내 종료 버튼
+    const btnHudExit = document.getElementById('btn-hud-exit');
+    if (btnHudExit) {
+        btnHudExit.addEventListener('click', () => {
+            // 안내 종료: FPV 끄기, 3D 틸트 해제, GPS 추적 중지
+            isFpvMode = false;
+            isGuidanceActive = false;
+            document.body.classList.remove('car-tilt-active');
+            const fpvOv = document.getElementById('fpv-overlay');
+            if (fpvOv) fpvOv.classList.add('hidden');
+            stopSimulation();
+            if (isLiveGpsActive) stopLiveGpsTracking();
+            const btn = document.getElementById('btn-toggle-fpv');
+            if (btn) {
+                btn.classList.remove('active');
+                const txt = btn.querySelector('.txt');
+                if (txt) txt.textContent = '1인칭 시점';
+            }
+            // 전체 경로 조망으로 복귀
+            if (currentPolyline) {
+                map.fitBounds(currentPolyline.getBounds(), { padding: [60, 60], animate: true });
+            }
+            showDetourAlert('⏹️ 안내 종료', '안심 귀가 안내를 종료하였습니다.');
+        });
+    }
+
+    // 5. 도착 예정 시간 공유 버튼
+    const btnHudShare = document.getElementById('btn-hud-share-eta');
+    if (btnHudShare) {
+        btnHudShare.addEventListener('click', () => {
+            const pcGuardian = document.getElementById('btn-guardian-share');
+            if (pcGuardian) pcGuardian.click();
         });
     }
 

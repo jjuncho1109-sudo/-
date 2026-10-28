@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- QRCode JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="static/style.css?v=20261021_perf_v2">
+    <link rel="stylesheet" href="static/style.css?v=20261028_apple_hud_v1">
 </head>
 <body>
     <!-- 📱 카카오맵 & 네이버 지도 스타일 모바일 상단 플로팅 검색 바 -->
@@ -26,7 +26,7 @@
                 <span class="search-icon">🔍</span>
                 <span class="search-placeholder" id="mobile-search-summary">진주시 안심 목적지 검색...</span>
             </div>
-            <button id="btn-mobile-qr-top" class="mobile-top-btn" title="스마트폰 QR 접속">
+            <button id="btn-mobile-qr-top" class="mobile-top-btn desktop-only" title="스마트폰 QR 접속">
                 <span>📱</span>
             </button>
             <button id="btn-mobile-night-toggle" class="mobile-top-btn" title="야간 다크모드 전환">
@@ -138,11 +138,30 @@
                     </button>
                 </div>
 
+                <!-- 🚶 🚲 🚗 모바일 빠른 이동수단 선택 탭 (안내 시작 전 선택 및 예상 소요시간 표시) -->
+                <div class="mobile-transit-selector" id="mobile-transit-selector">
+                    <button class="m-transit-chip active" data-mode="walk" id="m-chip-walk" title="도보 이동">
+                        <span class="m-t-icon">🚶</span>
+                        <span class="m-t-name">도보</span>
+                        <span class="m-t-time" id="m-time-walk">13분</span>
+                    </button>
+                    <button class="m-transit-chip" data-mode="bike" id="m-chip-bike" title="자전거 이동">
+                        <span class="m-t-icon">🚲</span>
+                        <span class="m-t-name">자전거</span>
+                        <span class="m-t-time" id="m-time-bike">4분</span>
+                    </button>
+                    <button class="m-transit-chip" data-mode="car" id="m-chip-car" title="차량 이동">
+                        <span class="m-t-icon">🚗</span>
+                        <span class="m-t-name">차량</span>
+                        <span class="m-t-time" id="m-time-car">3분</span>
+                    </button>
+                </div>
+
                 <!-- 🚀 카카오맵 스타일 메인 내비게이션 시작 CTA 버튼 -->
                 <div class="sheet-peek-actions">
                     <button id="btn-mobile-start-nav" class="btn-m-nav-start">
                         <span class="m-nav-icon">🚀</span>
-                        <span class="m-nav-txt" id="btn-m-nav-txt">안심 안내 시작</span>
+                        <span class="m-nav-txt" id="btn-m-nav-txt">도보 안심 안내 시작</span>
                     </button>
                     <button id="btn-mobile-guardian-open" class="btn-m-guardian" title="가족/보호자 안심 동행 링크 공유">
                         <span>🛡️ 동행</span>
@@ -189,8 +208,8 @@
                     <div id="recent-searches-list"></div>
                 </div>
 
-                <!-- 경로 검색 버튼 -->
-                <button id="btn-navigate" class="btn-primary">
+                <!-- 경로 검색 버튼 (PC 전용: 모바일은 바텀시트 메인 CTA로 통합) -->
+                <button id="btn-navigate" class="btn-primary desktop-only">
                     <span class="btn-icon">🛡️</span> 최적 안전 귀가로 탐색
                 </button>
             </div>
@@ -294,8 +313,8 @@
                     </div>
                 </div>
 
-                <!-- 모의 도보 시뮬레이션 및 속도 조절 -->
-                <div class="sim-control-box">
+                <!-- 모의 도보 시뮬레이션 및 속도 조절 (PC 전용 개발자 도구) -->
+                <div class="sim-control-box desktop-only">
                     <div class="sim-title-row">
                         <span>🚶 도보 시뮬레이터 (실제 체감 속도)</span>
                         <span class="sim-status" id="sim-status-txt">준비됨</span>
@@ -313,8 +332,8 @@
                     </div>
                 </div>
 
-                <!-- 가상 소등 테스트 도구 -->
-                <div class="spot-test-box">
+                <!-- 가상 소등 테스트 도구 (PC 전용) -->
+                <div class="spot-test-box desktop-only">
                     <span class="test-label">🧪 경로 상 소등 시험:</span>
                     <button id="btn-test-blackout" class="btn-test" title="내 바로 앞 경로 상의 가로등/상점을 정확히 소등시키고 우회로를 검증합니다">
                         💥 바로 앞 불 끄기 (우회로 즉시 생성)
@@ -357,21 +376,120 @@
 
 
 
-            <!-- 1인칭 네비게이션 HUD 오버레이 -->
-            <div id="fpv-overlay" class="fpv-overlay hidden">
-                <div class="fpv-hud-card">
-                    <div class="fpv-hud-top">
-                        <span class="fpv-live-badge"><span class="blink-dot"></span> 1인칭 밀착 안내 중</span>
-                        <span class="fpv-heading-badge" id="fpv-heading-txt">⬆️ 정면(전방) 주시</span>
-                        <span class="fpv-brightness-tag" id="fpv-brightness">🟢 안전 밝기: 매우 우수</span>
-                    </div>
-                    <div class="direction-row">
-                        <div class="direction-arrow" id="fpv-arrow">⬆️</div>
-                        <div class="direction-info">
-                            <h3 id="fpv-next-spot">35m 앞 🏪 GS25 24시 편의점</h3>
-                            <p id="fpv-route-hint">환하게 밝혀진 상점가 안심 보도를 따라 직진하세요</p>
+            <!-- 🍏 애플 지도 스타일 정밀 안심 내비게이션 HUD 시스템 (도보 & 차량/자전거 특화) -->
+            <div id="fpv-overlay" class="apple-nav-overlay hidden">
+                <!-- 1. 상단 다크 턴바이턴 카드 (사진1 도보 & 사진2 차량 완벽 구현) -->
+                <div class="apple-hud-card-top" id="apple-hud-card-top">
+                    <!-- 도보 안내 모드 상단부 (사진 1) -->
+                    <div id="hud-mode-walk" class="hud-mode-view">
+                        <div class="hud-main-turn">
+                            <div class="hud-turn-icon-box" id="walk-turn-icon">
+                                <!-- 기본 우회전 SVG (Apple 스타일 굵고 둥근 화살표) -->
+                                <svg class="hud-svg-turn" viewBox="0 0 48 48" fill="none">
+                                    <path d="M14 36V22C14 15.3726 19.3726 10 26 10H38" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M28 2L38 10L28 18" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="hud-turn-info">
+                                <div class="hud-dist-val" id="walk-dist-val">250m</div>
+                                <div class="hud-road-name" id="walk-road-name">대신로</div>
+                            </div>
+                        </div>
+                        <div class="hud-sub-turn">
+                            <div class="hud-sub-icon" id="walk-sub-icon">
+                                <svg viewBox="0 0 24 24" fill="none" class="hud-svg-sub">
+                                    <path d="M17 19V12C17 9.23858 14.7614 7 12 7H6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M10 3L6 7L10 11" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="hud-sub-road" id="walk-sub-road">초장로</span>
                         </div>
                     </div>
+
+                    <!-- 차량/자전거 안내 모드 상단부 (사진 2) -->
+                    <div id="hud-mode-car" class="hud-mode-view hidden">
+                        <div class="hud-main-turn car-style">
+                            <div class="hud-car-start-icon" id="car-start-icon">
+                                <!-- 출발 원형 화살표 SVG (사진 2의 동그라미+직진 화살표) -->
+                                <svg class="hud-svg-circle-arrow" viewBox="0 0 48 48" fill="none">
+                                    <circle cx="20" cy="24" r="14" stroke="currentColor" stroke-width="4.5"/>
+                                    <path d="M14 24H38" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                                    <path d="M30 16L38 24L30 32" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="hud-car-title-box">
+                                <div class="hud-car-start-txt" id="car-start-txt">대신로에서 출발</div>
+                            </div>
+                        </div>
+                        <div class="hud-sub-turn">
+                            <div class="hud-sub-icon" id="car-sub-icon">
+                                <svg viewBox="0 0 24 24" fill="none" class="hud-svg-sub">
+                                    <path d="M7 19V12C7 9.23858 9.23858 7 12 7H18" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 3L18 7L14 11" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="hud-sub-road" id="car-sub-turn-txt">우회전</span>
+                        </div>
+                    </div>
+
+                    <div class="hud-handle-bar"></div>
+                </div>
+
+                <!-- 2. 우측 세로 제어 버튼 (사진 공통: 전체보기, 음소거, 종료) -->
+                <div class="apple-hud-side-btns">
+                    <button id="btn-hud-transit-toggle" class="hud-side-btn" title="이동 수단 변경 (도보/자전거/차량)">
+                        <span id="hud-transit-icon">🚶</span>
+                    </button>
+                    <button id="btn-hud-overview" class="hud-side-btn" title="전체 경로 조망">
+                        <!-- 곡선 경로 아이콘 SVG -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="6" cy="6" r="2.5" fill="currentColor"/>
+                            <circle cx="18" cy="18" r="2.5" fill="currentColor"/>
+                            <path d="M6 8.5C6 14 18 10 18 15.5"/>
+                        </svg>
+                    </button>
+                    <button id="btn-hud-mute" class="hud-side-btn" title="음성 안내 켜기/끄기">
+                        <!-- 음소거 스피커 SVG -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+                            <line x1="23" y1="9" x2="17" y2="15"/>
+                            <line x1="17" y1="9" x2="23" y2="15"/>
+                        </svg>
+                    </button>
+                    <button id="btn-hud-exit" class="hud-side-btn exit" title="안내 종료">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- 3. 지도 위 현재 도로명 플로팅 뱃지 태그 (사진 1 도보: 흰색 / 사진 2 차량: 파란색) -->
+                <div id="hud-road-badge-overlay" class="hud-road-badge walk-style">
+                    <span id="hud-current-road-name">대신로</span>
+                </div>
+
+                <!-- 4. 하단 라이트 글래스 카드 (사진 1 & 사진 2 완벽 구현) -->
+                <div class="apple-hud-card-bottom" id="apple-hud-card-bottom">
+                    <div class="hud-bottom-drag-pill"></div>
+                    <div class="hud-bottom-metrics">
+                        <div class="hud-metric-item">
+                            <div class="hud-metric-val" id="hud-eta-clock">2:08</div>
+                            <div class="hud-metric-lbl">도착</div>
+                        </div>
+                        <div class="hud-metric-divider"></div>
+                        <div class="hud-metric-item">
+                            <div class="hud-metric-val" id="hud-remain-min">14</div>
+                            <div class="hud-metric-lbl">분</div>
+                        </div>
+                        <div class="hud-metric-divider"></div>
+                        <div class="hud-metric-item">
+                            <div class="hud-metric-val" id="hud-remain-dist">1</div>
+                            <div class="hud-metric-lbl" id="hud-remain-dist-unit">km</div>
+                        </div>
+                    </div>
+                    <!-- 도착 예정 시간 공유 버튼 -->
+                    <button id="btn-hud-share-eta" class="btn-hud-share">
+                        <span class="share-icon">👤+</span>
+                        <span>도착 예정 시간 공유</span>
+                    </button>
                 </div>
             </div>
 
@@ -491,7 +609,7 @@
     </div>
 
     <!-- 스크립트 연결 -->
-    <script src="static/script.js?v=20261021_qr_fix"></script>
+    <script src="static/script.js?v=20261028_apple_hud_v1"></script>
     <!-- Service Worker 등록 (오프라인 지원) -->
     <script>
         if ('serviceWorker' in navigator) {
